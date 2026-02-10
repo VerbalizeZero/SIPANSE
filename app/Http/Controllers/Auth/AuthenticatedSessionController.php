@@ -28,7 +28,41 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = $request->user();
+
+        $defaultRoute = match ($user?->role) {
+            'bendahara' => 'dashboard',
+            'tu' => 'tu.dashboard',
+            'ortu' => 'ortu.dashboard',
+            default => 'dashboard',
+        };
+
+        return redirect()->intended(route($defaultRoute, absolute: false));
+    }
+
+    /**
+     * Handle an incoming parent (ortu) authentication request by NISN.
+     */
+    public function storeOrtu(Request $request): RedirectResponse
+    {
+        $credentials = $request->validate([
+            'nisn' => ['required', 'regex:/^\d+$/', 'max:20'],
+        ]);
+
+        $user = \App\Models\User::where('nisn', $credentials['nisn'])
+            ->where('role', 'ortu')
+            ->first();
+
+        if (!$user) {
+            return back()
+                ->withErrors(['nisn' => __('auth.failed')])
+                ->onlyInput('nisn');
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('ortu.dashboard', absolute: false));
     }
 
     /**

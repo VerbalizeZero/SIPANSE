@@ -15,6 +15,12 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    @if (auth()->user()?->role === 'bendahara')
+                        <x-nav-link :href="route('bendahara.master-faktur.index')" :active="request()->routeIs('bendahara.master-faktur.*')">
+                            {{ __('Membuat Harga') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -70,6 +76,12 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+
+            @if (auth()->user()?->role === 'bendahara')
+                <x-responsive-nav-link :href="route('bendahara.master-faktur.index')" :active="request()->routeIs('bendahara.master-faktur.*')">
+                    {{ __('Membuat Harga') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

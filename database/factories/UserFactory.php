@@ -41,4 +41,28 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    ################################################
+    public function tu(): static
+{
+    return $this->state(fn () => [
+        'role' => 'tu',
+    ]);
 }
+
+public function bendahara(): static
+{
+    return $this->state(fn () => [
+        'role' => 'bendahara',
+    ]);
+}
+
+public function ortu(): static
+{
+    return $this->state(fn () => [
+        'role' => 'ortu',
+    ]);
+}
+
+}
+
