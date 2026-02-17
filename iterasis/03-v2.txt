@@ -1,0 +1,214 @@
+ITERASI 03 - CATATAN TEKNIS FITUR DATA SISWA (ROLE TU)
+====================================================
+
+1) TUJUAN ITERASI
+-----------------
+Iterasi 03 berfokus pada modul Data Siswa untuk role Tata Usaha (TU), dengan fitur:
+- Menampilkan data siswa
+- Download template CSV
+- Import data siswa dari CSV/TXT
+- Edit data siswa
+- Delete data siswa
+
+Arsitektur yang dipakai:
+- routes/web.php -> endpoint dan middleware
+- Controller -> logika bisnis dan validasi
+- Model -> akses data Eloquent
+- Blade view -> UI tabel + modal + form action
+- Migration -> batasan struktur kolom database
+
+
+2) PETA FILE YANG TERLIBAT
+--------------------------
+Routing:
+- routes/web.php
+
+Controller:
+- app/Http/Controllers/Tu/SiswaImportExportController.php
+
+View:
+- resources/views/tu/siswa/index.blade.php
+
+Model:
+- app/Models/Siswa.php
+
+Database schema:
+- database/migrations/2026_02_10_113000_create_siswas_table.php
+
+Testing (fitur terkait):
+- tests/Feature/Siswa/DataSiswaImportExportTest.php
+
+
+3) ALUR FITUR END-TO-END
+------------------------
+A. Buka halaman Data Siswa
+1. User akses URL /tu/siswa
+2. Route tu.siswa.index memanggil method index() di controller
+3. Controller mengambil data Siswa::latest()->get()
+4. View resources/views/tu/siswa/index.blade.php menampilkan tabel
+
+Koneksi kode:
+- routes/web.php: route GET /tu/siswa
+- SiswaImportExportController@index
+- view tu.siswa.index
+
+
+B. Download template data
+1. User klik tombol "Template Data"
+2. Request ke route tu.siswa.template
+3. Controller membaca nama kolom tabel siswas via Schema::getColumnListing('siswas')
+4. Kolom sistem (id, created_at, updated_at) dihapus
+5. Header dikembalikan sebagai file CSV
+
+Kenapa ini penting:
+- Template selalu mengikuti schema DB aktif
+- Mengurangi mismatch format import
+
+
+C. Import file CSV/TXT
+1. User buka modal "+ Tambah Siswa" lalu pilih file
+2. Form POST ke route tu.siswa.import
+3. Controller validasi file (harus csv/txt)
+4. Baca header CSV, cek kolom wajib: nisn + nama_siswa
+5. Loop tiap baris CSV:
+   - skip jika jumlah kolom rusak
+   - trim/sanitasi text
+   - validasi nisn & nama_siswa tidak kosong
+   - normalisasi tanggal lahir ke Y-m-d
+   - normalisasi jenis_kelamin ke L/P
+6. Simpan via updateOrCreate berdasarkan nisn
+7. Redirect ke index saat sukses
+
+Catatan penting:
+- updateOrCreate membuat proses sinkronisasi jadi aman:
+  - jika NISN sudah ada -> update
+  - jika NISN baru -> create
+
+
+D. Edit data siswa
+1. User klik tombol Edit di baris siswa
+2. Modal edit yang sesuai ID terbuka
+3. Form submit PUT ke /tu/siswa/{siswa}
+4. Route-model binding mengubah {siswa} menjadi objek model Siswa
+5. Controller update():
+   - validasi input sesuai limit kolom DB
+   - unique NISN dengan ignore ID saat ini
+   - normalisasi jenis_kelamin (L/P)
+6. Data diupdate lalu redirect ke index
+
+
+E. Delete data siswa
+1. User klik Delete
+2. Modal konfirmasi tampil
+3. Form submit DELETE ke /tu/siswa/{siswa}
+4. Controller destroy() memanggil delete()
+5. Redirect ke index
+
+
+4) RUTE YANG DIGUNAKAN (ROLE TU)
+--------------------------------
+- GET    /tu/siswa           -> tu.siswa.index
+- GET    /tu/siswa/template  -> tu.siswa.template
+- POST   /tu/siswa/import    -> tu.siswa.import
+- PUT    /tu/siswa/{siswa}   -> tu.siswa.update
+- DELETE /tu/siswa/{siswa}   -> tu.siswa.destroy
+
+Semua route ini berada dalam middleware:
+- auth
+- role:tu
+
+
+5) PENJELASAN KODE PENTING DI CONTROLLER
+----------------------------------------
+index()
+- Mengambil data siswa terbaru duluan
+- Melempar data ke view tu.siswa.index
+
+
+downloadTemplate()
+- Bangun template CSV dinamis dari schema DB
+- Hindari hardcode kolom
+
+
+import()
+- Validasi file agar parser aman
+- Validasi header minimal
+- Iterasi baris dengan handling data kotor
+- normalizeDate() untuk format tanggal campuran
+- normalizeJenisKelamin() untuk konsistensi L/P
+- updateOrCreate() untuk sinkronisasi berdasar NISN
+
+
+update()
+- Validasi disesuaikan dengan batas DB
+- Rule unique NISN dengan ignore current ID
+- Normalisasi gender sebelum update
+
+
+destroy()
+- Hapus 1 record siswa
+
+
+Helper penting:
+- nullableTrim(): bersihkan input (spasi, quote, NBSP)
+- normalizeDate(): dukung format tanggal umum + serial Excel
+- normalizeJenisKelamin(): map variasi input (Perempuan/Female/dll) ke kode 1 karakter
+
+
+6) KENAPA SEMPAT MUNCUL ERROR "DATA TOO LONG"
+-----------------------------------------------
+Kasus yang terjadi:
+- Nilai jenis_kelamin = "Perempuan"
+- Kolom DB siswas.jenis_kelamin hanya string(1)
+
+Akibat:
+- SQLSTATE[22001] String data, right truncated
+
+Perbaikan yang diterapkan:
+- Input gender dinormalisasi ke L/P sebelum disimpan
+- Form edit memakai select Laki-laki/Perempuan dengan value L/P
+- Validasi update disesuaikan dengan panjang kolom DB
+
+Referensi schema:
+- database/migrations/2026_02_10_113000_create_siswas_table.php
+  - nisn: string(20) unique
+  - jenis_kelamin: string(1)
+  - no_hp_ortu: string(20)
+
+
+7) KONEKSI VIEW <-> ROUTE <-> CONTROLLER
+----------------------------------------
+Di resources/views/tu/siswa/index.blade.php:
+- Tombol "Template Data" -> route('tu.siswa.template')
+- Form upload -> route('tu.siswa.import')
+- Form edit per siswa -> route('tu.siswa.update', $siswa) + method PUT
+- Form delete per siswa -> route('tu.siswa.destroy', $siswa) + method DELETE
+
+Script modal:
+- data-modal-open untuk membuka modal
+- data-modal-close untuk menutup modal
+- Jika ada error import file, modal upload otomatis dibuka lagi
+
+
+8) HAL YANG SUDAH BAIK DI ITERASI 03
+------------------------------------
+- Route naming konsisten (tu.siswa.*)
+- Role-based access sudah jelas (role:tu)
+- Import robust: validasi + normalisasi + updateOrCreate
+- Edit/Delete sudah berjalan dengan modal konfirmasi
+- Batasan DB sudah diakomodasi di validasi dan normalisasi
+
+
+9) POTENSI PENGEMBANGAN ITERASI BERIKUTNYA
+-------------------------------------------
+- Tambah pagination pada tabel siswa
+- Tambah search/filter data siswa
+- Auto-open modal edit saat validasi update gagal
+- Tambah flash message sukses/gagal yang lebih informatif
+- Perkuat validasi import untuk semua panjang kolom sesuai schema
+
+
+10) KESIMPULAN
+--------------
+Iterasi 03 berhasil membentuk alur CRUD + import data siswa yang utuh untuk role TU.
+Fokus utama implementasi adalah konsistensi data terhadap schema DB dan kemudahan operasional melalui modal UI serta import template yang sinkron.

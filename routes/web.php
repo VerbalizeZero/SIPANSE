@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Bendahara\MasterFakturController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Tu\SiswaImportExportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -20,6 +21,24 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['auth', 'role:tu'])->get('/tu', function () {
         return view('roles.tu');
     })->name('tu.dashboard');
+    // Iterasi 03: seluruh fitur Data Siswa untuk role TU.
+    Route::middleware(['auth', 'role:tu'])->group(function () {
+        // Halaman utama daftar siswa (read/list).
+        Route::get('/tu/siswa', [SiswaImportExportController::class, 'index'])
+            ->name('tu.siswa.index');
+        // Download header template CSV berdasarkan kolom tabel siswas.
+        Route::get('/tu/siswa/template', [SiswaImportExportController::class, 'downloadTemplate'])
+            ->name('tu.siswa.template');
+        // Import data siswa dari file CSV/TXT.
+        Route::post('/tu/siswa/import', [SiswaImportExportController::class, 'import'])
+            ->name('tu.siswa.import');
+        // Update satu siswa via route-model binding {siswa}.
+        Route::put('/tu/siswa/{siswa}', [SiswaImportExportController::class, 'update'])
+            ->name('tu.siswa.update');
+        // Hapus satu siswa via route-model binding {siswa}.
+        Route::delete('/tu/siswa/{siswa}', [SiswaImportExportController::class, 'destroy'])
+            ->name('tu.siswa.destroy');
+    });
     Route::middleware(['auth', 'role:bendahara'])->get('/bendahara', function () {
         return view('roles.bendahara');
     })->name('bendahara.dashboard');

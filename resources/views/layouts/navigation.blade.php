@@ -21,6 +21,12 @@
                             {{ __('Membuat Harga') }}
                         </x-nav-link>
                     @endif
+
+                    @if (auth()->user()?->role === 'tu')
+                        <x-nav-link :href="route('tu.siswa.index')" :active="request()->routeIs('tu.siswa.*')">
+                            {{ __('Data Siswa') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -80,6 +86,12 @@
             @if (auth()->user()?->role === 'bendahara')
                 <x-responsive-nav-link :href="route('bendahara.master-faktur.index')" :active="request()->routeIs('bendahara.master-faktur.*')">
                     {{ __('Membuat Harga') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if (auth()->user()?->role === 'tu')
+                <x-responsive-nav-link :href="route('tu.siswa.index')" :active="request()->routeIs('tu.siswa.*')">
+                    {{ __('Data Siswa') }}
                 </x-responsive-nav-link>
             @endif
         </div>
