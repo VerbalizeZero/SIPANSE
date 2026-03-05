@@ -16,7 +16,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        return view('auth.login');
+        return view('welcome');
     }
 
     /**
@@ -31,13 +31,14 @@ class AuthenticatedSessionController extends Controller
         $user = $request->user();
 
         $defaultRoute = match ($user?->role) {
-            'bendahara' => 'dashboard',
+            'bendahara' => 'bdh.dashboard',
             'tu' => 'tu.dashboard',
             'ortu' => 'ortu.dashboard',
-            default => 'dashboard',
+            default => 'dashboard', // default route jika role tidak dikenali, bisa diarahkan ke halaman umum atau dashboard
         };
 
-        return redirect()->intended(route($defaultRoute, absolute: false));
+        // return redirect()->intended(route($defaultRoute, absolute: false)); // intended akan redirect ke halaman sebelumnya jika ada, atau ke defaultRoute jika tidak ada
+        return redirect()->route($defaultRoute); 
     }
 
     /**

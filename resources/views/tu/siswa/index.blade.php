@@ -10,7 +10,7 @@
                     {{-- Ambil template CSV yang kolomnya disesuaikan dengan tabel siswas. --}}
                     <a
                         href="{{ route('tu.siswa.template') }}"
-                        class="inline-flex items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        class="inline-flex items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-blue-600 hover:text-white"
                     >
                         Template Data
                     </a>
@@ -108,7 +108,7 @@
             {{-- Submit file CSV/TXT ke endpoint import. --}}
             <form method="POST" action="{{ route('tu.siswa.import') }}" enctype="multipart/form-data" class="space-y-4">
                 @csrf
-                <div class="mx-auto max-w-md rounded-lg border border-dashed border-slate-300 px-6 py-8 text-center">
+                <div id="siswa-dropzone" class="mx-auto max-w-md rounded-lg border border-dashed border-slate-300 px-6 py-8 text-center transition">
                     <p class="mb-3 text-sm text-slate-500">Drag &amp; drop file spreadsheet di sini</p>
                     <p class="mb-3 text-xs text-slate-400">atau</p>
                     <div class="flex flex-col items-center gap-2">
@@ -257,9 +257,48 @@
         // Tampilkan nama file terpilih agar user yakin file yang diupload sudah benar.
         const fileInput = document.getElementById('siswa-file-input');
         const fileName = document.getElementById('siswa-file-name');
+        const dropzone = document.getElementById('siswa-dropzone');
         if (fileInput && fileName) {
             fileInput.addEventListener('change', () => {
                 fileName.textContent = fileInput.files?.[0]?.name ?? 'No file chosen';
+            });
+        }
+
+        // Drag & drop handler agar file tidak dibuka browser, tapi masuk ke input upload.
+        if (dropzone && fileInput && fileName) { // Pastikan elemen ada sebelum pasang event listener
+            ['dragenter', 'dragover'].forEach((eventName) => {
+                dropzone.addEventListener(eventName, (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    dropzone.classList.add('border-blue-500', 'bg-blue-50');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach((eventName) => { // Hilangkan efek highlight saat file keluar dari dropzone atau sudah dijatuhkan
+                dropzone.addEventListener(eventName, (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    dropzone.classList.remove('border-blue-500', 'bg-blue-50');
+                });
+            });
+
+            dropzone.addEventListener('drop', (event) => { // Tangani file yang dijatuhkan ke dropzone
+                const files = event.dataTransfer?.files;
+                if (!files || files.length === 0) {
+                    return;
+                }
+
+                const file = files[0]; // Ambil file pertama jika ada multiple file
+                const isAllowed = /\.(csv|txt)$/i.test(file.name);
+                if (!isAllowed) {
+                    fileName.textContent = 'Format file tidak didukung. Gunakan .csv atau .txt';
+                    return;
+                }
+
+                const dataTransfer = new DataTransfer(); // Buat objek DataTransfer untuk memasukkan file ke input
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                fileName.textContent = file.name;
             });
         }
 
