@@ -13,12 +13,76 @@ use Illuminate\View\View;
 
 class SiswaImportExportController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        // Tampilkan data terbaru duluan agar entri baru langsung terlihat di tabel.
-        $siswas = Siswa::query()->latest()->get();
+        $validated = $request->validate([
+            'keyword' => ['nullable', 'string', 'max:100'],
+            'angkatan' => ['nullable', 'string', 'max:20'],
+            'kelas' => ['nullable', 'string', 'max:50'],
+        ]);
 
-        return view('tu.siswa.index', compact('siswas'));
+        $keyword = trim((string) ($validated['keyword'] ?? ''));
+        $angkatan = trim((string) ($validated['angkatan'] ?? ''));
+        $kelas = trim((string) ($validated['kelas'] ?? ''));
+
+        // $keyword = trim((string) $request->query('keyword', '')); // Ambil keyword pencarian dari query string, default kosong jika tidak ada. Trim untuk membersihkan spasi ekstra.
+        // $angkatan = trim((string) $request->query('angkatan', '')); // Ambil filter angkatan dari query string, default kosong jika tidak ada. Trim untuk membersihkan spasi ekstra.
+        // $kelas = trim((string) $request->query('kelas', '')); // Ambil filter kelas dari query string, default kosong jika tidak ada. Trim untuk membersihkan spasi ekstra
+
+        // Tampilkan data terbaru duluan agar entri baru langsung terlihat di tabel.
+        //$siswas = Siswa::query()->latest()->get(); // Urutkan berdasarkan created_at DESC untuk menampilkan data terbaru di atas.
+
+        // SEARCHING
+        // Bangun query dengan kondisi pencarian dan filter yang fleksibel. Gunakan when() untuk menambahkan kondisi hanya jika parameter ada.
+        $siswas = Siswa::query()
+            ->when($keyword !== '', function ($query) use ($keyword) { // Jika ada keyword pencarian, tambahkan kondisi pencarian di kolom nisn, nama_siswa, atau nama_ortu.
+                $query->where(function ($subQuery) use ($keyword) { // Bungkus kondisi pencarian dalam sub-query untuk memastikan logika OR bekerja dengan benar.
+                    $subQuery->where('nisn', 'like', "%{$keyword}%")
+                        ->orWhere('nama_siswa', 'like', "%{$keyword}%")
+                        ->orWhere('nama_ortu', 'like', "%{$keyword}%");
+                });
+            })
+
+            // FILTERING
+            ->when($angkatan !=='', function ($query) use ($angkatan) { // Jika ada filter angkatan, tambahkan kondisi filter berdasarkan tahun_angkatan.
+                return $query->where('tahun_angkatan', $angkatan); // Filter tahun_angkatan harus cocok persis dengan input filter.
+            })
+            ->when($kelas !=='', function ($query) use ($kelas) { // Jika ada filter kelas, tambahkan kondisi filter berdasarkan kelas.
+                return $query->where('kelas', $kelas); // Filter kelas harus cocok persis dengan input filter.
+            });
+            
+            // PAGINATION
+            $siswas = $siswas
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(); // Bawa query filter ke link pagination.
+
+            // DROPDOWN OPTIONS
+            $angkatanOptions = Siswa::query()
+                ->select('tahun_angkatan')
+                ->distinct()
+                ->whereNotNull('tahun_angkatan')
+                ->where('tahun_angkatan', '!=', '')
+                ->orderByDesc('tahun_angkatan')
+                ->pluck('tahun_angkatan'); // Ambil daftar tahun_angkatan unik untuk opsi filter dropdown.
+
+            $kelasOptions = Siswa::query()
+                ->select('kelas')
+                ->distinct()
+                ->whereNotNull('kelas')
+                ->where('kelas', '!=', '')
+                ->orderBy('kelas')
+                ->pluck('kelas'); // Ambil daftar kelas unik untuk opsi filter dropdown.
+
+
+        return view('tu.siswa.index', compact(
+            'siswas',
+            'keyword',
+            'angkatan',
+            'kelas',
+            'angkatanOptions',
+            'kelasOptions'
+        )); // Kirim data siswa ke view untuk ditampilkan di tabel. View akan menangani format tampilan, termasuk tanggal lahir dan jenis kelamin.
     }
 
     public function downloadTemplate(): Response
@@ -29,7 +93,7 @@ class SiswaImportExportController extends Controller
             ->values()
             ->all();
 
-        $csv = implode(',', $columns);
+        $csv = implode(',', $columns); // Header CSV dengan kolom dari DB, dipisahkan koma.
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv',
@@ -45,7 +109,7 @@ class SiswaImportExportController extends Controller
         ]);
 
         $file = $validated['file'];
-        $handle = fopen($file->getRealPath(), 'r');
+        $handle = fopen($file->getRealPath(), 'r'); // Buka file untuk dibaca.
 
         if ($handle === false) {
             return back()->withErrors(['file' => 'File tidak dapat dibaca.']);

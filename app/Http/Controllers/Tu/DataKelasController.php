@@ -19,16 +19,26 @@ class DataKelasController extends Controller
      * Sumber utama data adalah tabel siswa (group by angkatan+kelas),
      * lalu diperkaya metadata dari tabel data_kelas jika sudah ada.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
+        $validated = $request->validate([
+            'keyword' => ['nullable', 'string', 'max:100'],
+            'angkatan' => ['nullable', 'string', 'max:20'],
+            'level' => ['nullable', 'in:10,11,12,Graduated,-'],
+        ]);
+
+        $keyword = trim((string) ($validated['keyword'] ?? ''));
+        $angkatan = trim((string) ($validated['angkatan'] ?? ''));
+        $level = trim((string) ($validated['level'] ?? ''));
+
         $kelasSummary = Siswa::query()
-            ->selectRaw('tahun_angkatan, kelas, COUNT(*) as total_siswa')
-            ->whereNotNull('kelas')
-            ->where('kelas', '!=', '')
-            ->groupBy('tahun_angkatan', 'kelas')
-            ->orderByDesc('tahun_angkatan')
-            ->orderBy('kelas')
-            ->get();
+            ->selectRaw('tahun_angkatan, kelas, COUNT(*) as total_siswa') // Hitung total siswa per kombinasi angkatan+kelas.
+            ->whereNotNull('kelas') // Abaikan siswa tanpa kelas.
+            ->where('kelas', '!=', '') // Abaikan siswa dengan kelas kosong.
+            ->groupBy('tahun_angkatan', 'kelas') // Kelompokkan berdasarkan angkatan dan kelas.
+            ->orderByDesc('tahun_angkatan') // Urutkan angkatan terbaru dulu.
+            ->orderBy('kelas') // Urutkan kelas secara alfabet setelah mengurutkan angkatan.
+            ->get(); // Eksekusi query dan dapatkan koleksi hasil.
 
         // Aman untuk environment yang belum migrate data_kelas.
         $kelasMetadata = Schema::hasTable('data_kelas')
@@ -59,9 +69,46 @@ class DataKelasController extends Controller
             ];
         });
 
+        // Filter berdasarkan keyword, angkatan, dan level jika diberikan.
+        $kelasRows = $kelasRows
+        ->filter(function ($row) use ($keyword, $angkatan, $level) {
+            $kelasMatch = stripos((string) ($row['kelas'] ?? ''), $keyword) !== false;
+            $waliKelasMatch = stripos((string) ($row['wali_kelas'] ?? ''), $keyword) !== false;
+            if ($keyword !== '' && ! $kelasMatch && ! $waliKelasMatch) {
+                return false;
+            }
+            if ($angkatan !== '' && $row['tahun_angkatan_raw'] !== $angkatan) {
+                return false;
+            }
+            if ($level !== '' && $row['level'] !== $level) {
+                return false;
+            }
+            return true;
+        })
+        ->values(); // Reset index setelah filter.
+
+        // PAGINATION manual karena data sudah dalam bentuk koleksi, bukan query builder.
+        //$kelasRows = $kelasRows
+
+
+        // Dropdown Options
+        $angkatanOptions = collect($kelasSummary)
+        ->map(fn ($row) => $row->tahun_angkatan === null || $row->tahun_angkatan === '' ? '__NULL__' : (string) $row->tahun_angkatan)
+        ->unique()
+        ->values();
+
+        $levelOptions = collect(['10', '11', '12', 'Graduated', '-']);
+            
         return view('tu.kelas.index', [
             'kelasRows' => $kelasRows,
             'kelasOptions' => $kelasRows,
+            'angkatanOptions' => $angkatanOptions,
+            'levelOptions' => $levelOptions,
+            'filters' => [
+                'keyword' => $keyword,
+                'angkatan' => $angkatan,
+                'level' => $level,
+            ],
         ]);
     }
 

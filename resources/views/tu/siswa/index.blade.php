@@ -1,27 +1,89 @@
 <x-app-layout>
     <div class="py-8">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="mb-4 flex items-center justify-between gap-4">
+            <div class="mb-4">
                 <div>
                     <h1 class="text-2xl font-semibold text-slate-900">Data Siswa</h1>
                     <p class="text-sm text-slate-500">Kelola data siswa dari hasil daftar ulang</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    {{-- Ambil template CSV yang kolomnya disesuaikan dengan tabel siswas. --}}
-                    <a
-                        href="{{ route('tu.siswa.template') }}"
-                        class="inline-flex items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-blue-600 hover:text-white"
-                    >
-                        Template Data
-                    </a>
-                    {{-- Buka modal upload untuk proses import massal siswa. --}}
-                    <button
-                        type="button"
-                        data-modal-open="upload-siswa-modal"
-                        class="inline-flex items-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-                    >
-                        + Tambah Siswa
-                    </button>
+
+                <div class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <form id="siswa-filter-form" action="{{ route('tu.siswa.index') }}" method="GET" class="flex flex-1 flex-col gap-2 md:flex-row md:items-center">
+
+                            {{-- Kolom Searching --}}
+                            <div class="relative w-full md:w-96">
+                                <input
+                                    type="text"
+                                    id="siswa-keyword-input"
+                                    name="keyword"
+                                    placeholder="Cari NISN, Siswa, atau Orang Tua..."
+                                    value="{{ $keyword ?? request('keyword') }}"
+                                    class="block w-full rounded-md border-slate-300 pr-9 focus:border-blue-600 focus:ring-blue-600 sm:text-sm"
+                                />
+
+                                {{-- Tombol Silang --}}
+                                @if (!empty($keyword))
+                                    <button 
+                                    type="button" 
+                                    id="siswa-clear-keyword" 
+                                    class="absolute inset-y-0 right-2 my-auto h-6 w-6 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                    aria-label="Clear keyword"
+                                    title="Clear keyword"
+                                    >
+                                        &times;
+                                    </button>    
+                                @endif
+                            </div>
+                        
+                            {{-- Dropdown Angkatan --}}
+                            <select 
+                            name="angkatan"
+                            id="angkatan" 
+                            class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600 sm:text-sm md:w-48"
+                            onchange="this.form.submit()"
+                            >
+                                <option value="">Pilih Tahun Angkatan</option>
+                                @foreach (($angkatanOptions ?? []) as $option)
+                                    <option value="{{ $option }}" {{ request('angkatan') == $option ? 'selected' : '' }}>
+                                        {{ $option }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            {{-- Dropdown Kelas --}}
+                            <select 
+                            name="kelas" 
+                            id="kelas" 
+                            class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600 sm:text-sm md:w-32"
+                            onchange="this.form.submit()"
+                            >
+                                <option value="">Pilih Kelas</option>
+                                @foreach (($kelasOptions ?? []) as $option)
+                                    <option value="{{ $option }}" {{ request('kelas') == $option ? 'selected' : '' }}>
+                                        {{ $option }}
+                                    </option>
+                                @endforeach
+                            </select>
+                    </form>
+
+                    {{-- Tombol Template & Add Siswa --}}
+                    <div class="flex items-center gap-2 lg:shrink-0">
+                        {{-- Ambil template CSV yang kolomnya disesuaikan dengan tabel siswas. --}}
+                        <a
+                            href="{{ route('tu.siswa.template') }}"
+                            class="inline-flex items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-blue-600 hover:text-white"
+                        >
+                            Template Data
+                        </a>
+                        {{-- Buka modal upload untuk proses import massal siswa. --}}
+                        <button
+                            type="button"
+                            data-modal-open="upload-siswa-modal"
+                            class="inline-flex items-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+                        >
+                            + Tambah Siswa
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -93,6 +155,10 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                <div class="mt-4">
+                    {{ $siswas->links() }}
                 </div>
             </div>
         </div>
@@ -310,5 +376,34 @@
                 modal.classList.add('flex');
             }
         @endif
+
+        // Fitur tambahan: tombol clear keyword untuk memudahkan pengguna menghapus filter pencarian dengan cepat.
+        const siswaFilterForm = document.querySelector('form[action="{{ route('tu.siswa.index') }}"]');
+        const siswaKeywordInput = document.getElementById('siswa-keyword-input');
+        const siswaClearKeyword = document.getElementById('siswa-clear-keyword');
+
+        siswaClearKeyword?.addEventListener('click', () => {
+            if (!siswaKeywordInput || !siswaFilterForm) return;
+            siswaKeywordInput.value = '';
+            siswaFilterForm.submit();
+        });
+
+        // Auto-search dengan debounce + minimal 2 karakter.
+        // const siswaFilterForm = document.getElementById('siswa-filter-form'); 
+        // const siswaKeywordInput = document.getElementById('siswa-keyword-input');
+        // let siswaSearchTimer = null;
+        // if (siswaFilterForm && siswaKeywordInput) {
+        //     siswaKeywordInput.addEventListener('input', () => {
+        //         const value = siswaKeywordInput.value.trim();
+
+        //         clearTimeout(siswaSearchTimer);
+        //         siswaSearchTimer = setTimeout(() => {
+        //             // Submit jika kosong (reset) atau minimal 2 huruf.
+        //             if (value.length === 0 || value.length >= 2) {
+        //                 siswaFilterForm.submit();
+        //             }
+        //         }, 400);
+        //     });
+        // }
     </script>
 </x-app-layout>

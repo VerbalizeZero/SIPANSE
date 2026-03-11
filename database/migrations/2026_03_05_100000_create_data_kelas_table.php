@@ -9,7 +9,7 @@ return new class extends Migration
     // Membuat tabel metadata kelas (level + wali kelas) per kombinasi angkatan dan kelas.
     public function up(): void
     {
-        Schema::create('data_kelas', function (Blueprint $table) {
+        Schema::create('data_kelas', function (Blueprint $table) { 
             $table->id();
             // Mengikuti tipe data dari proses import siswa (string tahun angkatan).
             $table->string('tahun_angkatan', 20);

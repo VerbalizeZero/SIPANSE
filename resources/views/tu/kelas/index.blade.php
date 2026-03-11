@@ -1,7 +1,7 @@
 <x-app-layout>
     @php
-        // Opsi angkatan untuk dropdown promote: [label tampilan => nilai raw].
-        $angkatanOptions = collect($kelasRows)->pluck('tahun_angkatan_raw', 'tahun_angkatan_display')->unique();
+        // Opsi angkatan khusus modal promote, dipisah dari dropdown filter agar tidak saling menimpa.
+        $promoteAngkatanOptions = collect($kelasRows)->pluck('tahun_angkatan_raw', 'tahun_angkatan_display')->unique();
         // Menjaga input lama saat validasi gagal (agar pilihan user tidak hilang).
         $oldMappings = old('mappings', []);
         // Jika ada error validasi mapping, modal promote otomatis dibuka kembali.
@@ -10,14 +10,74 @@
 
     <div class="py-8">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="mb-4 flex items-center justify-between gap-4">
+            <div class="mb-4">
                 <div>
                     <h1 class="text-2xl font-semibold text-slate-900">Data Kelas</h1>
                     <p class="text-sm text-slate-500">Kelola data kelas berdasarkan data siswa</p>
                 </div>
-                <button type="button" data-modal-open="promote-kelas-modal" class="inline-flex items-center rounded-md border bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
-                    Promote
-                </button>
+
+                {{-- Div Search, Filter, & Promote --}}
+                <div class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <form action="{{ route('tu.kelas.index') }}" method="GET" class="flex flex-1 flex-col gap-2 md:flex-row md:items-center">
+
+                        {{-- SEARCHING --}}
+                        <div class="relative w-full md:w-96">
+                            <input 
+                            type="text"
+                            name="keyword"
+                            id="kelas-keyword-input"
+                            value="{{ $filters['keyword'] ?? '' }}"
+                            placeholder="Cari berdasarkan kelas atau wali kelas..."
+                            class="block w-full rounded-md border-slate-300 pr-9 text-sm focus:border-blue-600 focus:ring-blue-600"
+                            />
+
+                            {{-- Tombol clear keyword yang muncul hanya saat ada input keyword, untuk memudahkan pengguna menghapus pencarian dengan cepat. --}}
+                            @if (!empty($filters['keyword']))
+                                <button 
+                                type="button" 
+                                id="kelas-clear-keyword" 
+                                class="absolute inset-y-0 right-2 my-auto h-6 w-6 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                aria-label="Clear keyword"
+                                title="Clear keyword"
+                                >
+                                    &times;
+                                </button>    
+                            @endif
+                        </div>
+
+                        {{-- FILTER ANGKATAN --}}
+                        <select 
+                        name="angkatan" 
+                        class="block w-full rounded-md border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600 md:w-56"
+                        onchange="this.form.submit()"
+                        >
+                            <option value="">Pilih Angkatan</option>
+                            @foreach (($angkatanOptions ?? []) as $value)
+                                <option value="{{ $value }}" {{ $filters['angkatan'] === $value ? 'selected' : '' }}>
+                                    {{ $value === '__NULL__' ? '-' : $value }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        {{-- FILTER LEVEL --}}
+                        <select 
+                        name="level" 
+                        class="block w-full rounded-md border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600 md:w-56"
+                        onchange="this.form.submit()"
+                        >
+                            <option value="">Pilih Level</option>
+                            @foreach (($levelOptions ?? []) as $value)
+                                <option value="{{ $value }}" {{ $filters['level'] === $value ? 'selected' : '' }}>
+                                    {{ $value }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
+
+                    <button type="button" data-modal-open="promote-kelas-modal" class="inline-flex items-center rounded-md border bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+                        Promote
+                    </button>
+                </div>
             </div>
 
             <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -81,7 +141,7 @@
                             <label class="mb-1 block text-sm font-medium text-slate-700">Pilih Angkatan</label>
                             <select id="promote-angkatan-select" class="block w-full rounded-md border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600">
                                 <option value="">Pilih angkatan</option>
-                                @foreach ($angkatanOptions as $label => $value)
+                                @foreach ($promoteAngkatanOptions as $label => $value)
                                     <option value="{{ $value }}">{{ $label }}</option>
                                 @endforeach
                             </select>
@@ -199,7 +259,7 @@
 
     <script>
         // Data awal dari server untuk kebutuhan filter, restore state, dan render daftar kelas.
-        const angkatanOptions = @json($angkatanOptions);
+        const angkatanOptions = @json($promoteAngkatanOptions);
         const oldMappings = @json($oldMappings);
         const kelasRows = @json($kelasRows);
         // Urutan level valid di sistem promote.
@@ -505,5 +565,17 @@
                 promoteModal.classList.add('flex');
             }
         @endif
+
+        // Fitur tambahan: tombol clear keyword untuk memudahkan pengguna menghapus filter pencarian dengan cepat.
+        const kelasFilterForm = document.querySelector('form[action="{{ route('tu.kelas.index') }}"]');
+        const kelasKeywordInput = document.getElementById('kelas-keyword-input');
+        const kelasClearKeyword = document.getElementById('kelas-clear-keyword');
+
+        kelasClearKeyword?.addEventListener('click', () => {
+            if (!kelasKeywordInput || !kelasFilterForm) return;
+            kelasKeywordInput.value = '';
+            kelasFilterForm.submit();
+        });
+
     </script>
 </x-app-layout>
