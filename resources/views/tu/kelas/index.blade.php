@@ -27,7 +27,7 @@
                             name="keyword"
                             id="kelas-keyword-input"
                             value="{{ $filters['keyword'] ?? '' }}"
-                            placeholder="Cari berdasarkan kelas atau wali kelas..."
+                            placeholder="Cari berdasarkan Kelas atau Wali Kelas..."
                             class="block w-full rounded-md border-slate-300 pr-9 text-sm focus:border-blue-600 focus:ring-blue-600"
                             />
 
@@ -48,10 +48,10 @@
                         {{-- FILTER ANGKATAN --}}
                         <select 
                         name="angkatan" 
-                        class="block w-full rounded-md border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600 md:w-56"
+                        class="block w-full rounded-md border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600 md:w-48"
                         onchange="this.form.submit()"
                         >
-                            <option value="">Pilih Angkatan</option>
+                            <option value="">Pilih Tahun Angkatan</option>
                             @foreach (($angkatanOptions ?? []) as $value)
                                 <option value="{{ $value }}" {{ $filters['angkatan'] === $value ? 'selected' : '' }}>
                                     {{ $value === '__NULL__' ? '-' : $value }}
@@ -62,7 +62,7 @@
                         {{-- FILTER LEVEL --}}
                         <select 
                         name="level" 
-                        class="block w-full rounded-md border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600 md:w-56"
+                        class="block w-full rounded-md border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600 md:w-32"
                         onchange="this.form.submit()"
                         >
                             <option value="">Pilih Level</option>

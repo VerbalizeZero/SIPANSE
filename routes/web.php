@@ -3,6 +3,7 @@
 use App\Http\Controllers\Bendahara\MasterFakturController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tu\DataKelasController;
+use App\Http\Controllers\Tu\FakturController;
 use App\Http\Controllers\Tu\SiswaImportExportController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +40,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/tu/kelas/promote/execute', [DataKelasController::class, 'executePromote'])
             ->name('tu.kelas.promote.execute');
 
+        // Iterasi-03: Data Siswa (Mengambil data dari template export & inmport)
         Route::get('/tu/siswa', [SiswaImportExportController::class, 'index'])
             ->name('tu.siswa.index');
         Route::get('/tu/siswa/template', [SiswaImportExportController::class, 'downloadTemplate'])
@@ -49,6 +51,16 @@ Route::middleware('auth')->group(function () {
             ->name('tu.siswa.update');
         Route::delete('/tu/siswa/{siswa}', [SiswaImportExportController::class, 'destroy'])
             ->name('tu.siswa.destroy');
+
+        // Iterasi-05: Menu Faktur untuk Tata Usaha.
+        Route::get('/tu/faktur', [FakturController::class, 'index'])
+            ->name('tu.faktur.index');
+        Route::post('/tu/faktur', [FakturController::class, 'store'])
+            ->name('tu.faktur.store');
+        Route::put('/tu/faktur/{faktur}', [FakturController::class, 'update'])
+            ->name('tu.faktur.update');
+        Route::delete('/tu/faktur/{faktur}', [FakturController::class, 'destroy'])
+            ->name('tu.faktur.destroy');
     });
 
     Route::middleware(['auth', 'role:bendahara'])->get('/bendahara', function () {

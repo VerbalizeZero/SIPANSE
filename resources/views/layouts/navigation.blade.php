@@ -26,6 +26,9 @@
                         <x-nav-link :href="route('tu.kelas.index')" :active="request()->routeIs('tu.kelas.*')">
                             {{ __('Data Kelas') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('tu.faktur.index')" :active="request()->routeIs('tu.faktur.*')">
+                            {{ __('Faktur') }}
+                        </x-nav-link>
                     @endif
                 </div>
             </div>
@@ -91,6 +94,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('tu.kelas.index')" :active="request()->routeIs('tu.kelas.*')">
                     {{ __('Data Kelas') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('tu.faktur.index')" :active="request()->routeIs('tu.faktur.*')">
+                    {{ __('Faktur') }}
                 </x-responsive-nav-link>
             @endif
         </div>

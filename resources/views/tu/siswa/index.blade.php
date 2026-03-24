@@ -158,7 +158,7 @@
                 </div>
 
                 <div class="mt-4">
-                    {{ $siswas->links() }}
+                    {{ $siswas->onEachSide(1)->links() }}
                 </div>
             </div>
         </div>

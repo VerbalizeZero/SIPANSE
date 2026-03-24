@@ -3,15 +3,15 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mb-4 flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold text-slate-900">Membuat Harga</h1>
-                    <p class="text-sm text-slate-500">Kelola master data jenis faktur dan harga</p>
+                    <h1 class="text-2xl font-semibold text-slate-900">Membuat Faktur</h1>
+                    <p class="text-sm text-slate-500">Kelola master data jenis faktur</p>
                 </div>
                 <button
                     type="button"
                     data-modal-open="create-modal"
                     class="inline-flex items-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
                 >
-                    + Tambah Harga
+                    + Tambah Faktur
                 </button>
             </div>
 
@@ -94,7 +94,7 @@
     <div id="create-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 px-4">
         <div class="w-full max-w-xl rounded-xl bg-white p-5 shadow-xl">
             <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-slate-900">Tambah Harga Tagihan</h2>
+                <h2 class="text-xl font-semibold text-slate-900">Tambah Faktur </h2>
                 <button type="button" data-modal-close="create-modal" class="text-slate-500 hover:text-slate-700">&times;</button>
             </div>
             <form method="POST" action="{{ route('bendahara.master-faktur.store') }}" class="space-y-4">
@@ -141,7 +141,7 @@
         <div id="edit-modal-{{ $faktur->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 px-4">
             <div class="w-full max-w-xl rounded-xl bg-white p-5 shadow-xl">
                 <div class="mb-4 flex items-center justify-between">
-                    <h2 class="text-xl font-semibold text-slate-900">Edit Harga Tagihan</h2>
+                    <h2 class="text-xl font-semibold text-slate-900">Edit Faktur</h2>
                     <button type="button" data-modal-close="edit-modal-{{ $faktur->id }}" class="text-slate-500 hover:text-slate-700">&times;</button>
                 </div>
                 <form method="POST" action="{{ route('bendahara.master-faktur.update', $faktur) }}" class="space-y-4">
@@ -178,11 +178,11 @@
         <div id="delete-modal-{{ $faktur->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 px-4">
             <div class="w-full max-w-xl rounded-xl bg-white p-5 shadow-xl">
                 <div class="mb-3 flex items-center justify-between">
-                    <h2 class="text-2xl font-semibold text-slate-900">Hapus Harga Tagihan</h2>
+                    <h2 class="text-2xl font-semibold text-slate-900">Hapus Faktur</h2>
                     <button type="button" data-modal-close="delete-modal-{{ $faktur->id }}" class="text-slate-500 hover:text-slate-700">&times;</button>
                 </div>
                 <p class="mb-5 text-sm text-slate-600">
-                    Apakah Anda yakin ingin menghapus harga tagihan "{{ $faktur->nama_faktur }}"?
+                    Apakah Anda yakin ingin menghapus faktur "{{ $faktur->nama_faktur }}"?
                     Tindakan ini tidak dapat dibatalkan.
                 </p>
                 <div class="flex justify-end gap-2">
