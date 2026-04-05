@@ -9,6 +9,7 @@ use App\Models\TuFaktur;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class FakturController extends Controller
@@ -100,6 +101,7 @@ class FakturController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->normalizePayload($this->validatePayload($request));
+        $validated['created_by'] = Auth::id();
         TuFaktur::create($validated);
 
         return redirect()->route('tu.faktur.index');

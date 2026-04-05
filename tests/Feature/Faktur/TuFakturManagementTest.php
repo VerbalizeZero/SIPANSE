@@ -60,33 +60,42 @@ class TuFakturManagementTest extends TestCase
             'deskripsi' => null,
         ]);
 
-        TuFaktur::create([
+        $fakturMaret = TuFaktur::create([
             'master_faktur_id' => $masterA->id,
             'target_type' => 'angkatan',
             'target_value' => '2027',
             'tersedia_pada' => '2026-03-01',
             'jatuh_tempo' => '2026-03-30',
             'status' => 'Pending',
-            'created_at' => '2026-03-10 10:00:00',
-            'updated_at' => '2026-03-10 10:00:00',
         ]);
+        $fakturMaret->created_at = '2026-03-10 10:00:00';
+        $fakturMaret->updated_at = '2026-03-10 10:00:00';
+        $fakturMaret->save();
 
-        TuFaktur::create([
+        $fakturApril = TuFaktur::create([
             'master_faktur_id' => $masterB->id,
             'target_type' => 'kelas',
             'target_value' => 'X-A',
             'tersedia_pada' => '2026-04-01',
             'jatuh_tempo' => '2026-04-30',
             'status' => 'Pending',
-            'created_at' => '2026-04-10 10:00:00',
-            'updated_at' => '2026-04-10 10:00:00',
         ]);
+        $fakturApril->created_at = '2026-04-10 10:00:00';
+        $fakturApril->updated_at = '2026-04-10 10:00:00';
+        $fakturApril->save();
 
-        $this->actingAs($tu)
+        $response = $this->actingAs($tu)
             ->get('/tu/faktur?bulan=2026-03&search=SPP')
-            ->assertOk()
-            ->assertSee('SPP Maret')
-            ->assertDontSee('Ujian Praktik');
+            ->assertOk();
+
+        $response->assertViewHas('fakturs', function ($fakturs) {
+            $items = method_exists($fakturs, 'items') ? collect($fakturs->items()) : collect($fakturs);
+            $names = $items->map(fn ($faktur) => $faktur->masterFaktur?->nama_faktur)->filter()->values();
+
+            return $names->contains('SPP Maret')
+                && !$names->contains('Ujian Praktik')
+                && $items->count() === 1;
+        });
 
         $faktur = TuFaktur::create([
             'master_faktur_id' => $masterA->id,

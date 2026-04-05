@@ -29,6 +29,9 @@
                         <x-nav-link :href="route('tu.faktur.index')" :active="request()->routeIs('tu.faktur.*')">
                             {{ __('Faktur') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('tu.verifikasi.index')" :active="request()->routeIs('tu.verifikasi.*')">
+                            {{ __('Verifikasi') }}
+                        </x-nav-link>
                     @endif
                 </div>
             </div>
@@ -98,6 +101,9 @@
                 <x-responsive-nav-link :href="route('tu.faktur.index')" :active="request()->routeIs('tu.faktur.*')">
                     {{ __('Faktur') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('tu.verifikasi.index')" :active="request()->routeIs('tu.verifikasi.*')">
+                    {{ __('Verifikasi') }}
+                </x-responsive-nav-link>
             @endif
         </div>
 
@@ -125,3 +131,4 @@
         </div>
     </div>
 </nav>
+

@@ -13,6 +13,7 @@ class TuFaktur extends Model
     // Kolom yang boleh diisi mass assignment pada create/update faktur TU.
     protected $fillable = [
         'master_faktur_id',
+        'created_by',
         'target_type',
         'target_value',
         'tersedia_pada',
@@ -24,5 +25,11 @@ class TuFaktur extends Model
     public function masterFaktur(): BelongsTo
     {
         return $this->belongsTo(MasterFaktur::class);
+    }
+
+    // Relasi ke user TU yang membuat faktur untuk audit trail.
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tu\DataKelasController;
 use App\Http\Controllers\Tu\FakturController;
 use App\Http\Controllers\Tu\SiswaImportExportController;
+use App\Http\Controllers\Tu\VerifikasiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -61,6 +62,16 @@ Route::middleware('auth')->group(function () {
             ->name('tu.faktur.update');
         Route::delete('/tu/faktur/{faktur}', [FakturController::class, 'destroy'])
             ->name('tu.faktur.destroy');
+
+        // Iterasi-06: Verifikasi pembayaran faktur.
+        Route::get('/tu/verifikasi', [VerifikasiController::class, 'index'])
+            ->name('tu.verifikasi.index');
+        Route::get('/tu/verifikasi/{faktur}', [VerifikasiController::class, 'show'])
+            ->name('tu.verifikasi.show');
+        Route::post('/tu/verifikasi/{faktur}/reject', [VerifikasiController::class, 'reject'])
+            ->name('tu.verifikasi.reject');
+        Route::post('/tu/verifikasi/{faktur}/export', [VerifikasiController::class, 'export'])
+            ->name('tu.verifikasi.export');
     });
 
     Route::middleware(['auth', 'role:bendahara'])->get('/bendahara', function () {
