@@ -18,10 +18,43 @@ class VerifikasiController extends Controller
      */
     public function index(): View
     {
-        $fakturs = TuFaktur::query()
-            ->with(['masterFaktur', 'creator'])
-            ->latest()
-            ->get();
+        $query = TuFaktur::query()->with(['masterFaktur', 'creator']);
+
+        // 1. Filter: Bulan Pembuatan (Format Y-m)
+        if (request()->filled('bulan')) {
+            try {
+                $date = \Carbon\Carbon::parse(request()->bulan);
+                $query->whereYear('created_at', $date->year)
+                      ->whereMonth('created_at', $date->month);
+            } catch (\Exception $e) {
+                // Ignore invalid date strings
+            }
+        }
+
+        // 2. Filter: Status Sublist Verifikasi
+        $status = request('status', 'aktif'); // Default 'aktif' jika tidak ada url
+        if ($status !== 'semua') {
+            if ($status === 'aktif') {
+                $query->where('status', '!=', 'diarsipkan');
+            } elseif ($status === 'berlangsung') {
+                $query->whereNotIn('status', ['selesai', 'diarsipkan']);
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        // 3. Search: Mencari dari Nama Faktur Master
+        // [SECURITY: ANTI-SQL INJECTION]
+        // Penggunaan where() dan function string di Eloquent ORM secara otomatis menggunakan 
+        // PDO Parameter Binding yang mencegah SQL Injection secara total.
+        if (request()->filled('search')) {
+            $search = request()->search;
+            $query->whereHas('masterFaktur', function ($q) use ($search) {
+                $q->where('nama_faktur', 'like', '%' . $search . '%');
+            });
+        }
+
+        $fakturs = $query->latest()->get();
 
         return view('tu.verifikasi.index', [
             'fakturs' => $fakturs,
@@ -35,59 +68,199 @@ class VerifikasiController extends Controller
     public function show(TuFaktur $faktur): View
     {
         $faktur->load(['masterFaktur', 'creator']);
-        $targetSiswas = $this->resolveTargetSiswas($faktur)->map(function (Siswa $siswa) {
+        $query = $this->resolveTargetSiswas($faktur);
+
+        // Alias tabel siswa agar aman jika ada bentrok column, gabungkan dengan data penyerahan
+        $query->select('siswas.*', 'penyerahan_fakturs.status as penyerahan_status', 'penyerahan_fakturs.id as penyerahan_id', 'penyerahan_fakturs.berkas_file', 'penyerahan_fakturs.catatan_penolakan')
+            ->leftJoin('penyerahan_fakturs', function ($join) use ($faktur) {
+                $join->on('siswas.id', '=', 'penyerahan_fakturs.siswa_id')
+                     ->where('penyerahan_fakturs.tu_faktur_id', '=', $faktur->id);
+            });
+
+        // Fitur Search untuk nama dan NISN
+        if (request()->filled('search')) {
+            $search = request('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('siswas.nama_siswa', 'like', '%' . $search . '%')
+                  ->orWhere('siswas.nisn', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Fitur Saring Status
+        if (request()->filled('status') && request()->status !== 'semua') {
+            if (request()->status === 'belum_ada_tindakan') {
+                $query->whereNull('penyerahan_fakturs.id');
+            } else {
+                $query->where('penyerahan_fakturs.status', request()->status);
+            }
+        }
+
+        $paginator = $query->paginate(20)->withQueryString();
+
+        $paginator->getCollection()->transform(function ($siswa) {
+            $verifLabel = 'Belum Ada Tindakan';
+            $verifBadge = 'bg-slate-100 text-slate-700 border-slate-200';
+            $verifNote = 'Belum ada submit verifikasi dari Ortu atau input tindakan TU.';
+
+            if ($siswa->penyerahan_id) {
+                if ($siswa->penyerahan_status === 'menunggu_verifikasi') {
+                    $verifLabel = 'Menunggu Verifikasi';
+                    $verifBadge = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                    $verifNote = 'Menunggu tindak lanjut TU atas berkas yang diunggah.';
+                } elseif ($siswa->penyerahan_status === 'diverifikasi') {
+                    $verifLabel = 'Sudah Diverifikasi';
+                    $verifBadge = 'bg-green-100 text-green-800 border-green-200';
+                    $verifNote = 'Telah diverifikasi TU.';
+                } elseif ($siswa->penyerahan_status === 'ditolak') {
+                    $verifLabel = 'Ditolak';
+                    $verifBadge = 'bg-red-100 text-red-800 border-red-200';
+                    $verifNote = $siswa->catatan_penolakan ?? 'Tindakan ditolak.';
+                }
+            }
+
             return [
                 'model' => $siswa,
+                'berkas_file' => $siswa->berkas_file,
+                'penyerahan_id' => $siswa->penyerahan_id,
                 'verification_status' => [
-                    'label' => 'Belum Ada Pengajuan',
-                    'badge' => 'bg-slate-100 text-slate-700 border-slate-200',
-                    'note' => 'Belum ada submit verifikasi dari Ortu atau input bantuan TU.',
+                    'label' => $verifLabel,
+                    'badge' => $verifBadge,
+                    'note' => $verifNote,
                 ],
                 'proof_status' => [
-                    'label' => 'Bukti Belum Diunggah',
-                    'badge' => 'bg-amber-50 text-amber-700 border-amber-200',
+                    'label' => $siswa->berkas_file ? 'Ada Berkas' : 'Bukti Belum Diunggah',
+                    'badge' => $siswa->berkas_file ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200',
                 ],
                 'source_status' => [
-                    'label' => 'Belum Ditindaklanjuti',
-                    'badge' => 'bg-blue-50 text-blue-700 border-blue-200',
+                    'label' => $siswa->penyerahan_id ? 'Telah Ditindak' : 'Belum Ditindaklanjuti',
+                    'badge' => $siswa->penyerahan_id ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200',
                 ],
             ];
         });
 
         return view('tu.verifikasi.show', [
             'faktur' => $faktur,
-            'targetSiswas' => $targetSiswas,
+            'targetSiswas' => $paginator,
             'statusMeta' => $this->statusMeta($faktur),
         ]);
     }
 
     /**
-     * Aksi tolak wajib menyertakan catatan penolakan.
+     * AJAX Endpoint:
+     * Menyimpan keputusan verifikasi TU (Tolak/Terima) per siswa langsung ke Database.
      */
-    public function reject(Request $request, TuFaktur $faktur): RedirectResponse
+    public function updateStatusSiswa(Request $request, TuFaktur $faktur, Siswa $siswa)
     {
+        // [SECURITY: XSS & PAYLOAD SANITIZATION]
+        // Mencegah input aneh (Malicious Input) dari Hacker menggunakan $request->validate()
         $validated = $request->validate([
-            'catatan_penolakan' => ['required', 'string', 'max:1000'],
+            'status' => ['required', 'in:diverifikasi,ditolak'],
+            'catatan_penolakan' => ['nullable', 'string', 'max:1000'], // Batas karakter max untuk hindari buffer overflow attacks
         ]);
 
-        // Placeholder iterasi-06:
-        // status faktur ditandai ditolak + menyimpan alasan pada session flash.
-        $faktur->update([
-            'status' => 'Ditolak',
-        ]);
+        // Karena TU bisa langsung melakukan verifikasi walau ortu belum upload berkas,
+        // kita panggil updateOrCreate agar data penyerahan tercatat pada DB.
+        \App\Models\PenyerahanFaktur::updateOrCreate(
+            [
+                'tu_faktur_id' => $faktur->id,
+                'siswa_id' => $siswa->id,
+            ],
+            [
+                'status' => $validated['status'],
+                'catatan_penolakan' => $validated['status'] === 'ditolak' ? $validated['catatan_penolakan'] : null,
+            ]
+        );
 
-        return redirect('/tu/verifikasi')
-            ->with('rejection_note', $validated['catatan_penolakan']);
+        // Auto-completion check
+        $totalSiswas = $this->resolveTargetSiswas($faktur)->count();
+        $verifiedSiswas = \App\Models\PenyerahanFaktur::where('tu_faktur_id', $faktur->id)
+            ->whereIn('status', ['diverifikasi', 'ditolak'])
+            ->count();
+
+        if ($totalSiswas > 0 && $verifiedSiswas >= $totalSiswas) {
+            $faktur->update(['status' => 'selesai']);
+        } elseif ($faktur->status === 'selesai' && $verifiedSiswas < $totalSiswas) {
+            $faktur->update(['status' => 'berlangsung']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status siswa berhasil direkam.',
+            'sublist_status' => $faktur->status
+        ]);
     }
 
     /**
-     * Export sublist faktur (placeholder),
-     * nanti dipakai untuk aktivasi timer auto-delete 7 hari.
+     * Export sublist faktur menjadi berkas CSV.
+     * Mengunci status dan merakit laporan berdasarkan data PenyerahanFaktur.
      */
-    public function export(TuFaktur $faktur): RedirectResponse
+    public function export(TuFaktur $faktur)
     {
-        return redirect('/tu/verifikasi')
-            ->with('exported_faktur_id', $faktur->id);
+        $currentStatus = strtolower((string)$faktur->status);
+
+        // Jika sublist sudah selesai diverifikasi semua, maka export ini menjadi trigger untuk merubah status file menjadi diarsipkan
+        if ($currentStatus === 'selesai') {
+            $faktur->update(['status' => 'diarsipkan']);
+        }
+        
+        // Catatan: Jika statusnya masih 'berlangsung' atau 'pending', Export tetap berjalan sebagai "Export Sementara"
+        // tanpa mengubah status faktur ke 'diarsipkan'.
+
+        $siswas = $this->resolveTargetSiswas($faktur)->get();
+        $fileName = 'Laporan_Verifikasi_' . $faktur->masterFaktur?->nama_faktur . '_' . now()->format('Ymd') . '.csv';
+
+        // Set Headers agar browser mengenali unduhan CSV
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        // Membangun file berurutan
+        $callback = function() use($siswas, $faktur) {
+            $file = fopen('php://output', 'w');
+            
+            // Header Kolom
+            fputcsv($file, [
+                'NISN', 
+                'Nama Siswa', 
+                'Kelas', 
+                'Ortunya', 
+                'Status File Bukti', 
+                'Keputusan TU', 
+                'Nama TU Bertugas', 
+                'Catatan / Alasan'
+            ]);
+
+            // Isi Data
+            foreach ($siswas as $siswa) {
+                // Tarik data riil dari PenyerahanFaktur (jika TU / Ortu sudah ada tindakan)
+                $penyerahan = \App\Models\PenyerahanFaktur::where('tu_faktur_id', $faktur->id)
+                    ->where('siswa_id', $siswa->id)->first();
+                
+                $statusFile = $penyerahan && $penyerahan->berkas_file ? 'Ada Berkas' : 'Belum Ada Berkas';
+                $keputusan = $penyerahan ? ucfirst($penyerahan->status) : 'Belum Diverifikasi';
+                $tu = auth()->user()?->name ?? '-';
+                $catatan = $penyerahan ? $penyerahan->catatan_penolakan : '-';
+                
+                fputcsv($file, [
+                    $siswa->nisn,
+                    $siswa->nama_siswa,
+                    $siswa->kelas ?? '-',
+                    $siswa->nama_ortu ?? '-',
+                    $statusFile,
+                    $keputusan,
+                    $tu,
+                    $catatan
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
@@ -128,8 +301,9 @@ class VerifikasiController extends Controller
     /**
      * Ambil daftar siswa target untuk detail faktur.
      */
-    private function resolveTargetSiswas(TuFaktur $faktur): Collection
+    private function resolveTargetSiswas(TuFaktur $faktur): \Illuminate\Database\Eloquent\Builder
     {
+        /** @var \Illuminate\Database\Eloquent\Builder $query */
         $query = Siswa::query()
             ->when($faktur->target_type === 'angkatan', fn ($builder) => $builder->where('tahun_angkatan', $faktur->target_value))
             ->when($faktur->target_type === 'kelas', fn ($builder) => $builder->where('kelas', $faktur->target_value))
@@ -149,7 +323,7 @@ class VerifikasiController extends Controller
             });
         }
 
-        return $query->get();
+        return $query;
     }
 
     /**
@@ -163,8 +337,15 @@ class VerifikasiController extends Controller
             return [
                 'label' => 'Selesai, Menunggu Export',
                 'badge' => 'bg-amber-100 text-amber-800 border-amber-200',
-                'dot' => 'bg-amber-400',
                 'hint' => 'Verifikasi dianggap rampung, tetapi laporan belum diamankan.',
+            ];
+        }
+
+        if ($status === 'diarsipkan') {
+            return [
+                'label' => 'Aman',
+                'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                'hint' => 'Faktur dan laporan selesai, siap untuk diarsip.',
             ];
         }
 
@@ -172,7 +353,6 @@ class VerifikasiController extends Controller
             return [
                 'label' => 'Ada Penolakan',
                 'badge' => 'bg-rose-100 text-rose-700 border-rose-200',
-                'dot' => 'bg-rose-400',
                 'hint' => 'Sublist ini memiliki pengajuan yang ditolak atau perlu ditinjau ulang.',
             ];
         }

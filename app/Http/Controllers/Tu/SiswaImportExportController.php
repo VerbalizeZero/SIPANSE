@@ -54,7 +54,7 @@ class SiswaImportExportController extends Controller
             // PAGINATION
             $siswas = $siswas
                 ->latest()
-                ->paginate(1)
+                ->paginate(10)
                 ->withQueryString(); // Bawa query filter ke link pagination.
 
             // DROPDOWN OPTIONS

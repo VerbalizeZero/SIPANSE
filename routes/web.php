@@ -72,6 +72,8 @@ Route::middleware('auth')->group(function () {
             ->name('tu.verifikasi.reject');
         Route::post('/tu/verifikasi/{faktur}/export', [VerifikasiController::class, 'export'])
             ->name('tu.verifikasi.export');
+        Route::post('/tu/verifikasi/{faktur}/siswa/{siswa}/status', [VerifikasiController::class, 'updateStatusSiswa'])
+            ->name('tu.verifikasi.update_status_siswa');
     });
 
     Route::middleware(['auth', 'role:bendahara'])->get('/bendahara', function () {
@@ -89,9 +91,27 @@ Route::middleware('auth')->group(function () {
             ->name('bendahara.master-faktur.destroy');
     });
 
-    Route::middleware(['auth', 'role:ortu'])->get('/ortu', function () {
-        return view('roles.ortu');
-    })->name('ortu.dashboard');
+    Route::post('/ortu/logout', [\App\Http\Controllers\Ortu\AuthController::class, 'logout'])
+         ->name('ortu.logout');
+
+    // Route khusus Orang Tua
+    Route::middleware(['auth', 'role:orang_tua'])->group(function () {
+        Route::get('/ortu', function () {
+            // Pindahkan redirect ke dasbor faktur karena belum ada dashboard utama khusus ortu
+            return redirect()->route('ortu.faktur.index');
+        })->name('ortu.dashboard');
+
+        Route::get('/ortu/faktur', [\App\Http\Controllers\Ortu\FakturController::class, 'index'])
+             ->name('ortu.faktur.index');
+        Route::post('/ortu/faktur/{faktur}/submit', [\App\Http\Controllers\Ortu\FakturController::class, 'submit'])
+             ->name('ortu.faktur.submit');
+    });
 });
+
+// Route login Orang Tua harus di luar middleware 'auth' agar bisa diakses tanpa sesi aktif
+Route::get('/ortu/login', [\App\Http\Controllers\Ortu\AuthController::class, 'showLoginForm'])
+     ->name('ortu.login.form');
+Route::post('/ortu/login', [\App\Http\Controllers\Ortu\AuthController::class, 'login'])
+     ->name('ortu.login.submit');
 
 require __DIR__.'/auth.php';

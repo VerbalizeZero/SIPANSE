@@ -372,7 +372,7 @@
 
                             <div class="form-panel hidden" id="formOrtu" data-height-target>
                                 <div class="form-title">Login sebagai Orang Tua</div>
-                                <form method="POST" action="{{ route('login.ortu') }}">
+                                <form method="POST" action="{{ route('ortu.login.submit') }}">
                                     @csrf
                                     <div class="field">
                                         <label class="label" for="nisn">NISN Siswa</label>

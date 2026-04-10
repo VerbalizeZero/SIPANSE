@@ -15,7 +15,7 @@
 
                     @if (auth()->user()?->role === 'bendahara')
                         <x-nav-link :href="route('bendahara.master-faktur.index')" :active="request()->routeIs('bendahara.master-faktur.*')">
-                            {{ __('Membuat Harga') }}
+                            {{ __('Membuat Faktur') }}
                         </x-nav-link>
                     @endif
 
