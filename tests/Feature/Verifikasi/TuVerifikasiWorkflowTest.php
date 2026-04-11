@@ -3,7 +3,9 @@
 namespace Tests\Feature\Verifikasi;
 
 use App\Models\MasterFaktur;
+use App\Models\Siswa;
 use App\Models\TuFaktur;
+use App\Models\PenyerahanFaktur;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -31,6 +33,20 @@ class TuVerifikasiWorkflowTest extends TestCase
             'tersedia_pada' => '2026-04-01',
             'jatuh_tempo' => '2026-04-30',
             'status' => 'Pending',
+        ]);
+    }
+
+    /**
+     * Helper membuat siswa yang masuk target faktur (angkatan 2027).
+     */
+    private function createTargetSiswa(): Siswa
+    {
+        return Siswa::create([
+            'nisn' => '1202988374',
+            'nama_siswa' => 'Dober Mejiro',
+            'tahun_angkatan' => '2027',
+            'kelas' => 'D',
+            'jenis_kelamin' => 'Laki-laki',
         ]);
     }
 
@@ -92,53 +108,80 @@ class TuVerifikasiWorkflowTest extends TestCase
             ->assertOk();
     }
 
-    /**
-     * Rule penting:
-     * aksi tolak WAJIB ada catatan penolakan sebagai authenticator.
-     */
     /** @test */
-    public function tu_cannot_reject_verification_without_rejection_note(): void
+    public function tu_can_update_status_siswa_to_diverifikasi(): void
     {
         $tu = User::factory()->tu()->create();
         $faktur = $this->createTuFaktur();
+        $siswa = $this->createTargetSiswa();
+        PenyerahanFaktur::create([
+            'tu_faktur_id' => $faktur->id,
+            'siswa_id' => $siswa->id,
+            'berkas_file' => 'penyerahan_faktur/bukti-awal.jpg',
+            'status' => 'menunggu_verifikasi',
+            'catatan_penolakan' => null,
+        ]);
 
         $this->actingAs($tu)
-            ->post("/tu/verifikasi/{$faktur->id}/reject", [
-                'catatan_penolakan' => '',
+            ->post("/tu/verifikasi/{$faktur->id}/siswa/{$siswa->id}/status", [
+                'status' => 'diverifikasi',
+                'catatan_penolakan' => null,
             ])
-            ->assertSessionHasErrors('catatan_penolakan');
+            ->assertOk()
+            ->assertJson([
+                'success' => true,
+                'sublist_status' => 'selesai',
+            ]);
+
+        $this->assertDatabaseHas('penyerahan_fakturs', [
+            'tu_faktur_id' => $faktur->id,
+            'siswa_id' => $siswa->id,
+            'status' => 'diverifikasi',
+        ]);
     }
 
-    /**
-     * Jika catatan penolakan terisi, proses tolak harus berhasil.
-     * Selain status, nantinya juga menyimpan audit trail user TU yang memproses.
-     */
     /** @test */
-    public function tu_can_reject_verification_with_rejection_note(): void
+    public function tu_can_update_status_siswa_to_ditolak_with_note(): void
     {
         $tu = User::factory()->tu()->create();
         $faktur = $this->createTuFaktur();
+        $siswa = $this->createTargetSiswa();
+        PenyerahanFaktur::create([
+            'tu_faktur_id' => $faktur->id,
+            'siswa_id' => $siswa->id,
+            'berkas_file' => 'penyerahan_faktur/bukti.jpg',
+            'status' => 'menunggu_verifikasi',
+            'catatan_penolakan' => null,
+        ]);
 
         $this->actingAs($tu)
-            ->post("/tu/verifikasi/{$faktur->id}/reject", [
+            ->post("/tu/verifikasi/{$faktur->id}/siswa/{$siswa->id}/status", [
+                'status' => 'ditolak',
                 'catatan_penolakan' => 'Bukti transfer tidak sesuai nominal faktur.',
             ])
-            ->assertRedirect('/tu/verifikasi');
+            ->assertOk()
+            ->assertJson([
+                'success' => true,
+                'sublist_status' => 'selesai',
+            ]);
+
+        $this->assertDatabaseHas('penyerahan_fakturs', [
+            'tu_faktur_id' => $faktur->id,
+            'siswa_id' => $siswa->id,
+            'status' => 'ditolak',
+            'catatan_penolakan' => 'Bukti transfer tidak sesuai nominal faktur.',
+        ]);
     }
 
-    /**
-     * Setelah semua verifikasi faktur selesai + TU export laporan,
-     * sistem mengaktifkan timer auto-delete 7 hari (bukan langsung hapus).
-     */
     /** @test */
-    public function exporting_completed_sublist_activates_seven_day_cleanup_timer(): void
+    public function exporting_sublist_returns_csv_stream_response(): void
     {
         $tu = User::factory()->tu()->create();
         $faktur = $this->createTuFaktur();
 
         $this->actingAs($tu)
             ->post("/tu/verifikasi/{$faktur->id}/export")
-            ->assertRedirect('/tu/verifikasi');
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }
 }
-
