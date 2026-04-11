@@ -71,7 +71,7 @@
                         {{-- Ambil template CSV yang kolomnya disesuaikan dengan tabel siswas. --}}
                         <a
                             href="{{ route('tu.siswa.template') }}"
-                            class="inline-flex items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-blue-600 hover:text-white"
+                            class="inline-flex items-center rounded-md border bg-emerald-600 text-white px-4 py-2 text-sm font-semibold hover:bg-emerald-700 hover:text-white"
                         >
                             Template Data
                         </a>
