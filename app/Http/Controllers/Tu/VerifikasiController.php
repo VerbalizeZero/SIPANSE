@@ -306,7 +306,15 @@ class VerifikasiController extends Controller
         /** @var \Illuminate\Database\Eloquent\Builder $query */
         $query = Siswa::query()
             ->when($faktur->target_type === 'angkatan', fn ($builder) => $builder->where('tahun_angkatan', $faktur->target_value))
-            ->when($faktur->target_type === 'kelas', fn ($builder) => $builder->where('kelas', $faktur->target_value))
+            ->when($faktur->target_type === 'kelas', function ($builder) use ($faktur) {
+                $targetVal = (string) $faktur->target_value;
+                if (str_contains($targetVal, '|')) {
+                    [$thn, $kls] = explode('|', $targetVal);
+                    $builder->where('tahun_angkatan', $thn)->where('kelas', $kls);
+                } else {
+                    $builder->where('kelas', $targetVal);
+                }
+            })
             ->orderBy('nama_siswa')
             ->orderBy('nisn');
 

@@ -22,7 +22,7 @@ class FakturController extends Controller
         'siswa' => 'Siswa',
     ];
     //  status faktur pada level agregat TU.
-    private const STATUS_OPTIONS = ['Pending', 'Selesai'];
+    private const STATUS_OPTIONS = ['pending', 'selesai', 'diarsipkan', 'berlangsung'];
 
     /**
      * Halaman list faktur TU + filter bulan, kelas, dan search nama faktur.
@@ -102,6 +102,7 @@ class FakturController extends Controller
     {
         $validated = $this->normalizePayload($this->validatePayload($request));
         $validated['created_by'] = Auth::id();
+        $validated['status'] = 'pending';
         TuFaktur::create($validated);
 
         return redirect()->route('tu.faktur.index');
@@ -133,7 +134,6 @@ class FakturController extends Controller
             'target_value' => ['nullable', 'string', 'max:100', 'required_unless:target_type,semua_siswa'],
             'tersedia_pada' => ['required', 'date'],
             'jatuh_tempo' => ['required', 'date', 'after_or_equal:tersedia_pada'],
-            'status' => ['required', 'in:'.implode(',', self::STATUS_OPTIONS)],
         ]);
     }
 

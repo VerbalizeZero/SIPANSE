@@ -34,7 +34,7 @@
                         placeholder="Cari nama faktur..."
                         class="block w-full rounded-md border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600 md:w-72"
                     />
-                    <button type="submit" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                    <button type="submit" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
                         Filter
                     </button>
                 </form>
@@ -75,10 +75,26 @@
                                         'semua_siswa' => 'Semua Siswa',
                                         default => ucfirst((string) $faktur->target_type),
                                     };
-                                    $targetValue = $faktur->target_value ?: 'Semua Siswa';
-                                    $statusClass = $faktur->status === 'Selesai'
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : 'bg-rose-100 text-rose-700';
+                                    $targetValueText = $faktur->target_value ?: 'Semua Siswa';
+                                    if ($faktur->target_type === 'kelas' && str_contains($targetValueText, '|')) {
+                                        [$thn, $kls] = explode('|', $targetValueText);
+                                        $targetValueText = "Angkatan {$thn} - Kelas {$kls}";
+                                    }
+                                    
+                                    $rawStatus = strtolower($faktur->status);
+                                    if (in_array($rawStatus, ['pending', 'berlangsung'])) {
+                                        $displayStatus = 'Pending';
+                                        $statusClass = 'bg-slate-100 text-slate-700';
+                                    } elseif ($rawStatus === 'selesai') {
+                                        $displayStatus = 'Selesai';
+                                        $statusClass = 'bg-amber-100 text-amber-800';
+                                    } elseif ($rawStatus === 'diarsipkan') {
+                                        $displayStatus = 'Arsip';
+                                        $statusClass = 'bg-emerald-100 text-emerald-800';
+                                    } else {
+                                        $displayStatus = ucfirst($rawStatus);
+                                        $statusClass = 'bg-slate-100 text-slate-700';
+                                    }
                                 @endphp
                                 <tr>
                                     <td class="px-4 py-3">{{ $faktur->masterFaktur?->nama_faktur ?? '-' }}</td>
@@ -87,13 +103,13 @@
                                             {{ $targetLabel }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3">{{ $targetValue }}</td>
+                                    <td class="px-4 py-3">{{ $targetValueText }}</td>
                                     <td class="px-4 py-3">Rp {{ number_format((int) ($faktur->masterFaktur?->nominal ?? 0), 0, ',', '.') }}</td>
                                     <td class="px-4 py-3">{{ $faktur->tersedia_pada }}</td>
                                     <td class="px-4 py-3">{{ $faktur->jatuh_tempo }}</td>
                                     <td class="px-4 py-3">
                                         <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $statusClass }}">
-                                            {{ $faktur->status }}
+                                            {{ $displayStatus }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 text-right">
@@ -161,14 +177,7 @@
                         <label class="mb-1 block text-sm font-medium text-slate-700">Jatuh Tempo</label>
                         <input type="date" name="jatuh_tempo" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required />
                     </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Status</label>
-                        <select name="status" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required>
-                            @foreach ($statusOptions as $statusOption)
-                                <option value="{{ $statusOption }}">{{ $statusOption }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+
                 </div>
                 <div class="flex justify-end gap-2">
                     <button type="button" data-modal-close="create-faktur-modal" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700">Batal</button>
@@ -228,14 +237,7 @@
                             <label class="mb-1 block text-sm font-medium text-slate-700">Jatuh Tempo</label>
                             <input type="date" name="jatuh_tempo" value="{{ $faktur->jatuh_tempo }}" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required />
                         </div>
-                        <div>
-                            <label class="mb-1 block text-sm font-medium text-slate-700">Status</label>
-                            <select name="status" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required>
-                                @foreach ($statusOptions as $statusOption)
-                                    <option value="{{ $statusOption }}" @selected($faktur->status === $statusOption)>{{ $statusOption }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+
                     </div>
                     <div class="flex justify-end gap-2">
                         <button type="button" data-modal-close="edit-faktur-modal-{{ $fakturId }}" class="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700">Batal</button>
@@ -297,11 +299,14 @@
             }
 
             if (targetType === 'kelas') {
-                const optionsHtml = kelasOptions.map((item) => {
-                    const value = String(item);
+                const optionsHtml = angkatanOptions.flatMap((angkatan) => 
+                    kelasOptions.map((kelas) => {
+                        const value = `${angkatan}|${kelas}`;
+                        const label = `Angkatan ${angkatan} - Kelas ${kelas}`;
                     const selected = value === String(safeCurrentValue) ? 'selected' : '';
-                    return `<option value="${value}" ${selected}>${value}</option>`;
-                }).join('');
+                        return `<option value="${value}" ${selected}>${label}</option>`;
+                    })
+                ).join('');
 
                 container.innerHTML = `
                     <select name="${fieldName}" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required>
