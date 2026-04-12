@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,8 @@ class PenyerahanFaktur extends Model
         'berkas_file',
         'status',
         'catatan_penolakan',
+        'verified_by',
+        'verified_at',
     ];
 
     /**
@@ -33,5 +36,13 @@ class PenyerahanFaktur extends Model
     public function siswa(): BelongsTo
     {
         return $this->belongsTo(Siswa::class, 'siswa_id');
+    }
+
+    /**
+     * Relasi ke user TU yang memverifikasi / menolak berkas.
+     */
+    public function verifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
     }
 }

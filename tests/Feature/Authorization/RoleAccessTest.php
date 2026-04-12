@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Authorization;
 
+use App\Models\Siswa;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,7 +28,15 @@ class RoleAccessTest extends TestCase
     /** @test */
     public function ortu_can_access_ortu_area(): void
     {
-        $ortu = User::factory()->ortu()->create();
+        Siswa::create([
+            'nisn' => '1202988374',
+            'nama_siswa' => 'Dober Mejiro',
+            'tahun_angkatan' => '2027',
+            'kelas' => 'D',
+            'jenis_kelamin' => 'Laki-laki',
+        ]);
+
+        $ortu = User::query()->where('nisn', '1202988374')->firstOrFail();
         $this->actingAs($ortu)->get('/ortu')->assertOk();
     }
 

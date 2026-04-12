@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Siswa;
 use App\Models\TuFaktur;
 use App\Models\PenyerahanFaktur;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,6 +19,7 @@ class FakturController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $todayJakarta = Carbon::now('Asia/Jakarta')->toDateString();
         
         // Cari data Siswa anak yang bersangkutan
         $siswa = Siswa::where('nisn', $user->nisn)->first();
@@ -27,20 +30,26 @@ class FakturController extends Controller
 
         // Cari faktur-faktur yang dikhususkan (target_type) mengenai Siswa ini.
         $fakturs = TuFaktur::with(['masterFaktur'])
-            // Status harus belum selesai
-            ->where('status', '!=', 'Selesai')
+            // Status harus belum selesai, case-insensitive agar data lama/baru tetap konsisten.
+            ->whereRaw('LOWER(status) != ?', ['selesai'])
+            // Faktur baru tampil ketika tanggal ketersediaannya sudah masuk (WIB/Jakarta).
+            ->whereDate('tersedia_pada', '<=', $todayJakarta)
             ->where(function ($query) use ($siswa) {
-                // Semua
-                $query->where('target_type', 'semua')
+                // Semua siswa: mendukung dua penamaan agar kompatibel dengan data lama/baru.
+                $query->whereIn('target_type', ['semua', 'semua_siswa'])
                 
                 // Berdasarkan angkatan
                 ->orWhere(function ($q) use ($siswa) {
                     $q->where('target_type', 'angkatan')->where('target_value', $siswa->tahun_angkatan);
                 })
 
-                // Berdasarkan kelas
+                // Berdasarkan kelas (mendukung format `D` dan format gabungan `2027|D`).
                 ->orWhere(function ($q) use ($siswa) {
-                    $q->where('target_type', 'kelas')->where('target_value', $siswa->kelas);
+                    $q->where('target_type', 'kelas')
+                        ->where(function ($kelasQuery) use ($siswa) {
+                            $kelasQuery->where('target_value', $siswa->kelas)
+                                ->orWhere('target_value', $siswa->tahun_angkatan . '|' . $siswa->kelas);
+                        });
                 })
 
                 // Berdasarkan identitas personal (NISN/Nama)
@@ -50,12 +59,24 @@ class FakturController extends Controller
                 });
             })
             ->latest()
-            ->get();
+            ->paginate(10);
 
         // Cari status riwayat Penyerahan Faktur yang sudah kita buat jika ada
-        $riwayats = PenyerahanFaktur::where('siswa_id', $siswa->id)->get()->keyBy('tu_faktur_id');
+        $riwayats = PenyerahanFaktur::with('verifiedBy')
+            ->where('siswa_id', $siswa->id)
+            ->whereIn('tu_faktur_id', $fakturs->pluck('id'))
+            ->get()
+            ->keyBy('tu_faktur_id');
 
-        return view('ortu.faktur.index', compact('fakturs', 'riwayats', 'siswa'));
+        $tuContacts = User::query()
+            ->where('role', 'tu')
+            ->select('name', 'email')
+            ->orderBy('name')
+            ->get();
+
+        $tuContactPhone = (string) config('app.tu_contact_phone', env('TU_CONTACT_PHONE', 'Belum tersedia'));
+
+        return view('ortu.faktur.index', compact('fakturs', 'riwayats', 'siswa', 'tuContacts', 'tuContactPhone'));
     }
 
     /**
@@ -72,11 +93,11 @@ class FakturController extends Controller
 
         // Tadi kita sepakat form wajib punya berkas gambar/file
         $request->validate([
-            'berkas_file' => ['required', 'file', 'image', 'max:2048'], // Wajib file gambar max 2MB
+            'berkas_file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
         ], [
             'berkas_file.required' => 'Gagal Submit: Mohon melampirkan berkas bukti dokumen.',
             'berkas_file.file' => 'Berkas gagal diunggah. Hal ini biasanya terjadi jika file Anda (seperti gambar dari Unsplash) berukuran terlalu besar melebihi batas server komputer lokal.',
-            'berkas_file.image' => 'Berkas harus berbentuk gambar (JPG/PNG).',
+            'berkas_file.mimes' => 'Berkas harus berbentuk JPG, JPEG, PNG, atau PDF.',
             'berkas_file.max' => 'Gagal Submit: Ukuran berkas tidak boleh melebihi 2MB.',
         ]);
 
@@ -93,6 +114,8 @@ class FakturController extends Controller
                 'berkas_file' => $path,
                 'status' => 'menunggu_verifikasi',
                 'catatan_penolakan' => null, // Reset status tolak jika di-update lagi
+                'verified_by' => null,
+                'verified_at' => null,
             ]
         );
 

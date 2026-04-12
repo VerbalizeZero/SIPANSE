@@ -6,6 +6,7 @@ use App\Http\Controllers\Tu\DataKelasController;
 use App\Http\Controllers\Tu\FakturController;
 use App\Http\Controllers\Tu\SiswaImportExportController;
 use App\Http\Controllers\Tu\VerifikasiController;
+use App\Http\Controllers\Ortu\DashboardController as OrtuDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -96,10 +97,7 @@ Route::middleware('auth')->group(function () {
 
     // Route khusus Orang Tua
     Route::middleware(['auth', 'role:orang_tua'])->group(function () {
-        Route::get('/ortu', function () {
-            // Pindahkan redirect ke dasbor faktur karena belum ada dashboard utama khusus ortu
-            return redirect()->route('ortu.faktur.index');
-        })->name('ortu.dashboard');
+        Route::get('/ortu', [OrtuDashboardController::class, 'index'])->name('ortu.dashboard');
 
         Route::get('/ortu/faktur', [\App\Http\Controllers\Ortu\FakturController::class, 'index'])
              ->name('ortu.faktur.index');
