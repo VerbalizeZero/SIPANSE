@@ -355,11 +355,14 @@
                                     @csrf
                                     <div class="field">
                                         <label class="label" for="email">Email atau Username</label>
-                                        <input class="input" id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="username" placeholder="Masukkan email atau username">
+                                        <input class="input" id="email" type="text" name="email" value="{{ old('email') }}" required autocomplete="username" placeholder="Masukkan email atau username">
                                     </div>
                                     <div class="field">
                                         <label class="label" for="password">Password</label>
                                         <input class="input" id="password" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan password">
+                                        @if ($errors->get('email'))
+                                            <div class="error">{{ $errors->first('email') }}</div>
+                                        @endif
                                     </div>
                                     <div class="actions">
                                         @if (Route::has('password.request'))
@@ -372,7 +375,7 @@
 
                             <div class="form-panel hidden" id="formOrtu" data-height-target>
                                 <div class="form-title">Login sebagai Orang Tua</div>
-                                <form method="POST" action="{{ route('ortu.login.submit') }}">
+                                <form method="POST" action="{{ route('login.ortu') }}">
                                     @csrf
                                     <div class="field">
                                         <label class="label" for="nisn">NISN Siswa</label>
@@ -451,8 +454,8 @@
                 }, transitionDelay);
             };
 
-            window.addEventListener('load', () => setViewportHeight(null));
-            const initialRole = @json($errors->has('nisn') || old('nisn')) ? 'ortu' : null;
+            const initialRole = @json($errors->has('nisn') || old('nisn')) ? 'ortu'
+                                : (@json($errors->has('email') || old('email')) ? 'admin' : null);
             if (initialRole) {
                 const target = panels[initialRole];
                 if (target) {
@@ -463,6 +466,8 @@
                     target.classList.add('active');
                     setViewportHeight(target);
                 }
+            } else {
+                window.addEventListener('load', () => setViewportHeight(null));
             }
             window.addEventListener('resize', () => {
                 const active = document.querySelector('.form-panel.active');

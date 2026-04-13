@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Siswa extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'tahun_angkatan',
         'nisn',

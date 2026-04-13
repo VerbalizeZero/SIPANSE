@@ -42,7 +42,7 @@ class OrtuFeatureTest extends TestCase
         ]);
 
         // Post ke rute login khusus ortu
-        $response = $this->post('/ortu/login', [
+        $response = $this->post('/login-ortu', [
             'nisn' => '9876543210'
         ]);
 
@@ -50,11 +50,14 @@ class OrtuFeatureTest extends TestCase
         $this->assertAuthenticated();
 
         // Validasi gagal jika nisn ngawur
-        $responseFail = $this->post('/ortu/login', [
+        $this->post('/logout'); // logout dulu agar tidak redirect ke dashboard
+        $responseFail = $this->post('/login-ortu', [
             'nisn' => '11111'
         ]);
-        
-        $responseFail->assertSessionHasErrors(['nisn']);
+
+        $responseFail->assertRedirect('/login');
+        $this->followRedirects($responseFail)
+            ->assertSee('NISN tidak ditemukan');
     }
 
     public function test_ortu_cannot_submit_without_uploading_file(): void

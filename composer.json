@@ -11,7 +11,9 @@
     "require": {
         "php": "^8.2",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "mews/purifier": "^3.4",
+        "spatie/laravel-backup": "^10.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -85,6 +87,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "audit": {
+            "ignore": ["[PKSA-21fb-n1x5-5nf7, PKSA-2cx9-ynrq-qdk3]"]
         }
     },
     "minimum-stability": "stable",

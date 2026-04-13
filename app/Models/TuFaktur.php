@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TuFaktur extends Model
 {
+    use LogsActivity;
     // Tabel transaksi faktur milik Tata Usaha.
     protected $table = 'tu_fakturs';
 

@@ -96,9 +96,9 @@ class RoleDashboardMetricsTest extends TestCase
         $response->assertOk()
             ->assertViewIs('roles.tu')
             ->assertViewHas('stats', function (array $stats) {
-                return ($stats['total_faktur_dibuat'] ?? null) === 2
+                return ($stats['total_faktur_dibuat'] ?? null) === 3
                     && ($stats['total_faktur_berjalan'] ?? null) === 1
-                    && ($stats['total_faktur_selesai'] ?? null) === 1
+                    && ($stats['total_faktur_selesai'] ?? null) === 2
                     && ($stats['total_diterima'] ?? null) === 1
                     && ($stats['total_ditolak'] ?? null) === 1;
             });

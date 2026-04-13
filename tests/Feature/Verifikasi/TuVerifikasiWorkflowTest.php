@@ -162,7 +162,7 @@ class TuVerifikasiWorkflowTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'success' => true,
-                'sublist_status' => 'selesai',
+                'sublist_status' => 'Pending',
             ]);
 
         $this->assertDatabaseHas('penyerahan_fakturs', [

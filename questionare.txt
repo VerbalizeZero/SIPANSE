@@ -1,0 +1,72 @@
+CATATAN KUESIONER - SIPANSE
+============================
+
+1. SKALA PENILAIAN (LIKERT)
+----------------------------
+Gunakan skala 1-5 untuk setiap pernyataan:
+
+| Nilai | Kategori         | Skor |
+|-------|------------------|------|
+| 1     | Sangat Tidak Setuju / Sangat Buruk | 1 |
+| 2     | Tidak Setuju / Buruk               | 2 |
+| 3     | Netral / Cukup                     | 3 |
+| 4     | Setuju / Baik                      | 4 |
+| 5     | Sangat Setuju / Sangat Baik        | 5 |
+
+2. ASPEK PENILAIAN
+-------------------
+Disarankan menggunakan 5 aspek utama. Setiap aspek bisa terdiri dari 3-5 pernyataan.
+
+Aspek 1: Kualitas Informasi
+- Kejelasan data faktur yang ditampilkan
+- Kelengkapan informasi status verifikasi
+- Kemudahan memahami riwayat pembayaran
+
+Aspek 2: Kemudahan Penggunaan (Usability)
+- Kemudahan navigasi antar menu
+- Kemudahan mengunggah bukti pembayaran
+- Kejelasan form dan instruksi pengisian
+- Responsivitas tampilan di perangkat mobile
+
+Aspek 3: Kinerja & Responsivitas Sistem
+- Kecepatan halaman saat dibuka
+- Kecepatan proses upload dan verifikasi
+- Stabilitas sistem saat digunakan
+
+Aspek 4: Keamanan & Akses Data
+- Rasa aman saat login dengan data pribadi
+- Kebenaran hak akses sesuai peran (role)
+- Kerahasiaan data siswa dan faktur
+
+Aspek 3: Kepuasan Umum
+- Sistem membantu mempermudah pekerjaan/administrasi
+- Keseluruhan sistem berjalan sesuai harapan
+- Kemungkinan merekomendasikan sistem ini ke pihak lain
+
+3. RUMUS PERHITUNGAN
+---------------------
+Mean per Aspek:
+  Mean Aspek = Total Skor Responden untuk Aspek X / Jumlah Responden
+
+Mean Keseluruhan (Mean of Means):
+  Mean Total = Jumlah Mean semua Aspek / Jumlah Aspek
+
+Alternatif (hasil sama):
+  Mean Total = Total Skor Seluruh Pernyataan / (Jumlah Responden x Jumlah Pernyataan)
+
+4. INTERPRETASI HASIL
+----------------------
+| Interval      | Kategori          |
+|---------------|-------------------|
+| 1.00 - 1.80   | Sangat Tidak Baik |
+| 1.81 - 2.60   | Tidak Baik        |
+| 2.61 - 3.40   | Cukup Baik        |
+| 3.41 - 4.20   | Baik              |
+| 4.21 - 5.00   | Sangat Baik       |
+
+5. CATATAN PENTING
+-------------------
+- Jumlah aspek = 5 (bukan jumlah fitur di sistem)
+- Total pernyataan disarankan 15-25 item
+- Target responden minimal 30 orang per role (TU, Bendahara, Ortu)
+- Bisa juga dihitung mean per role jika ingin membandingkan kepuasan antar pengguna

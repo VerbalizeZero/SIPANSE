@@ -175,7 +175,7 @@ class VerifikasiController extends Controller
 
         $penyerahan->status = $validated['status'];
         $penyerahan->verified_by = auth()->id();
-        $penyerahan->verified_at = now('Asia/Jakarta');
+        $penyerahan->verified_at = now();
         if ($validated['status'] === 'ditolak') {
             $penyerahan->catatan_penolakan = $validated['catatan_penolakan'];
         } else {
@@ -195,7 +195,7 @@ class VerifikasiController extends Controller
         // Auto-completion check
         $totalSiswas = $this->resolveTargetSiswas($faktur)->count();
         $verifiedSiswas = \App\Models\PenyerahanFaktur::where('tu_faktur_id', $faktur->id)
-            ->whereIn('status', ['diverifikasi', 'ditolak'])
+            ->where('status', 'diverifikasi')
             ->count();
 
         // Debug log untuk melihat nilai-nilai status
@@ -348,7 +348,7 @@ class VerifikasiController extends Controller
         if ($currentStatus === 'selesai' || empty($faktur->last_exported_at)) {
             $faktur->forceFill([
                 'status' => 'diarsipkan',
-                'last_exported_at' => now('Asia/Jakarta'),
+                'last_exported_at' => now(),
                 'last_exported_by' => auth()->id(),
             ])->save();
         }

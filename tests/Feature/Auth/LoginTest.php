@@ -63,7 +63,7 @@ class LoginTest extends TestCase
         ]);
 
         $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('bendahara.dashboard'));
     }
 
     /** @test */
@@ -97,6 +97,40 @@ class LoginTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect(route('login'));
         $response->assertSessionHasErrors('email'); // default Breeze
+    }
+
+    /** @test */
+    public function tu_can_authenticate_using_username(): void
+    {
+        $user = User::factory()->tu()->create([
+            'username' => 'tu_admin',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $response = $this->post(route('login'), [
+            'email' => 'tu_admin',
+            'password' => 'password123',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('tu.dashboard'));
+    }
+
+    /** @test */
+    public function bendahara_can_authenticate_using_username(): void
+    {
+        $user = User::factory()->bendahara()->create([
+            'username' => 'bendahara_admin',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $response = $this->post(route('login'), [
+            'email' => 'bendahara_admin',
+            'password' => 'password123',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('bendahara.dashboard'));
     }
 
     /** @test */

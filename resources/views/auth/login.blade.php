@@ -14,7 +14,7 @@
 
         <div class="auth-field">
             <label for="email" class="auth-label">Email atau Username</label>
-            <input id="email" class="auth-input" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="Masukkan email atau username" />
+            <input id="email" class="auth-input" type="text" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="Masukkan email atau username" />
             <x-input-error :messages="$errors->get('email')" class="auth-error" />
         </div>
 

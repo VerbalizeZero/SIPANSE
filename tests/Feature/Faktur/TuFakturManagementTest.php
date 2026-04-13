@@ -128,7 +128,6 @@ class TuFakturManagementTest extends TestCase
                 'target_value' => 'X-A',
                 'tersedia_pada' => '2026-03-01',
                 'jatuh_tempo' => '2026-03-30',
-                'status' => 'Pending',
             ]);
 
         $response->assertRedirect(route('tu.faktur.index'));
@@ -136,7 +135,7 @@ class TuFakturManagementTest extends TestCase
             'master_faktur_id' => $masterFaktur->id,
             'target_type' => 'kelas',
             'target_value' => 'X-A',
-            'status' => 'Pending',
+            'status' => 'pending',
         ]);
     }
 
@@ -157,7 +156,7 @@ class TuFakturManagementTest extends TestCase
             'target_value' => '2027',
             'tersedia_pada' => '2026-03-01',
             'jatuh_tempo' => '2026-03-30',
-            'status' => 'Pending',
+            'status' => 'pending',
         ]);
 
         $updateResponse = $this->actingAs($tu)
@@ -167,14 +166,13 @@ class TuFakturManagementTest extends TestCase
                 'target_value' => null,
                 'tersedia_pada' => '2026-03-01',
                 'jatuh_tempo' => '2026-04-15',
-                'status' => 'Selesai',
             ]);
 
         $updateResponse->assertRedirect(route('tu.faktur.index'));
         $this->assertDatabaseHas('tu_fakturs', [
             'id' => $tuFaktur->id,
             'target_type' => 'semua_siswa',
-            'status' => 'Selesai',
+            'status' => 'pending',
         ]);
 
         $deleteResponse = $this->actingAs($tu)

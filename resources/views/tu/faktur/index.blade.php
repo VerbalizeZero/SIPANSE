@@ -1,6 +1,6 @@
 <x-app-layout>
     {{-- Halaman utama Faktur untuk role TU. --}}
-    <div class="py-8">
+    <div class="py-4 sm:py-8">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mb-4">
                 <h1 class="text-2xl font-semibold text-slate-900">Faktur</h1>

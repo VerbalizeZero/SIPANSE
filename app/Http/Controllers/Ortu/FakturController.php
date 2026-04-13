@@ -83,9 +83,14 @@ class FakturController extends Controller
             ->orderBy('name')
             ->get();
 
-        $tuContactPhone = (string) config('app.tu_contact_phone', env('TU_CONTACT_PHONE', 'Belum tersedia'));
+        $picTu = User::query()
+            ->where('role', 'tu')
+            ->where('is_pic', true)
+            ->first();
 
-        return view('ortu.faktur.index', compact('fakturs', 'riwayats', 'siswa', 'tuContacts', 'tuContactPhone'));
+        $tuContactPhone = (string) ($picTu?->contact ?: config('app.tu_contact_phone', env('TU_CONTACT_PHONE', 'Belum tersedia')));
+
+        return view('ortu.faktur.index', compact('fakturs', 'riwayats', 'siswa', 'tuContacts', 'tuContactPhone', 'picTu'));
     }
 
     /**

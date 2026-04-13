@@ -3,12 +3,14 @@
 use App\Http\Controllers\Bendahara\MasterFakturController;
 use App\Http\Controllers\Bendahara\ArsipController as BendaharaArsipController;
 use App\Http\Controllers\Bendahara\DashboardController as BendaharaDashboardController;
+use App\Http\Controllers\Bendahara\ProfileController as BendaharaProfileController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tu\DataKelasController;
 use App\Http\Controllers\Tu\FakturController;
 use App\Http\Controllers\Tu\SiswaImportExportController;
 use App\Http\Controllers\Tu\VerifikasiController;
 use App\Http\Controllers\Tu\DashboardController as TuDashboardController;
+use App\Http\Controllers\Tu\ProfileController as TuProfileController;
 use App\Http\Controllers\Ortu\DashboardController as OrtuDashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,14 +34,19 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Route profile default Breeze dinonaktifkan karena setiap role menggunakan halaman profile khusus.
+    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::middleware(['auth', 'role:tu'])->get('/tu', [TuDashboardController::class, 'index'])
         ->name('tu.dashboard');
 
     Route::middleware(['auth', 'role:tu'])->group(function () {
+        Route::get('/tu/profile', [TuProfileController::class, 'edit'])->name('tu.profile.edit');
+        Route::put('/tu/profile', [TuProfileController::class, 'update'])->name('tu.profile.update');
+        Route::put('/tu/profile/password', [TuProfileController::class, 'updatePassword'])->name('tu.profile.password');
+
         // Iterasi-04: Data Kelas (ambil basis data dari siswa, lalu kelola metadata kelas).
         Route::get('/tu/kelas', [DataKelasController::class, 'index'])
             ->name('tu.kelas.index');
@@ -107,6 +114,10 @@ Route::middleware('auth')->group(function () {
         ->name('bendahara.dashboard');
 
     Route::middleware(['auth', 'role:bendahara'])->group(function () {
+        Route::get('/bendahara/profile', [BendaharaProfileController::class, 'edit'])->name('bendahara.profile.edit');
+        Route::put('/bendahara/profile', [BendaharaProfileController::class, 'update'])->name('bendahara.profile.update');
+        Route::put('/bendahara/profile/password', [BendaharaProfileController::class, 'updatePassword'])->name('bendahara.profile.password');
+
         Route::get('/bendahara/master-faktur', [MasterFakturController::class, 'index'])
             ->name('bendahara.master-faktur.index');
         Route::post('/bendahara/master-faktur', [MasterFakturController::class, 'store'])
@@ -137,11 +148,5 @@ Route::middleware('auth')->group(function () {
              ->name('ortu.faktur.submit');
     });
 });
-
-// Route login Orang Tua harus di luar middleware 'auth' agar bisa diakses tanpa sesi aktif
-Route::get('/ortu/login', [\App\Http\Controllers\Ortu\AuthController::class, 'showLoginForm'])
-     ->name('ortu.login.form');
-Route::post('/ortu/login', [\App\Http\Controllers\Ortu\AuthController::class, 'login'])
-     ->name('ortu.login.submit');
 
 require __DIR__.'/auth.php';

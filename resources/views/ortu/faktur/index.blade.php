@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="py-8">
+    <div class="py-4 sm:py-8">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -146,7 +146,7 @@
                 <div class="rounded-xl border border-blue-200 bg-blue-50 p-3">
                     <p class="font-semibold text-slate-900">Kontak Tata Usaha</p>
                     @php
-                        $primaryTu = $tuContacts->first();
+                        $primaryTu = $picTu ?? $tuContacts->first();
                     @endphp
                     <p class="mt-1">PIC TU: <span class="font-semibold">{{ $primaryTu?->name ?? 'Belum tersedia' }}</span></p>
                     <p class="mt-1">Nomor Kontak: <span class="font-semibold">{{ $tuContactPhone }}</span></p>

@@ -51,19 +51,19 @@ class AuthenticatedSessionController extends Controller
         ]);
 
         $user = \App\Models\User::where('nisn', $credentials['nisn'])
-            ->where('role', 'ortu')
+            ->where('role', 'orang_tua')
             ->first();
 
         if (!$user) {
-            return back()
-                ->withErrors(['nisn' => __('auth.failed')])
+            return redirect()->route('login')
+                ->withErrors(['nisn' => 'NISN tidak ditemukan sebagai akun Orang Tua.'])
                 ->onlyInput('nisn');
         }
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('ortu.dashboard', absolute: false));
+        return redirect()->route('ortu.dashboard');
     }
 
     /**
