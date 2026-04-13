@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Bendahara\MasterFakturController;
 use App\Http\Controllers\Bendahara\ArsipController as BendaharaArsipController;
+use App\Http\Controllers\Bendahara\DashboardController as BendaharaDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tu\DataKelasController;
 use App\Http\Controllers\Tu\FakturController;
 use App\Http\Controllers\Tu\SiswaImportExportController;
 use App\Http\Controllers\Tu\VerifikasiController;
+use App\Http\Controllers\Tu\DashboardController as TuDashboardController;
 use App\Http\Controllers\Ortu\DashboardController as OrtuDashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,7 +17,18 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $user = auth()->user();
+
+    if (!$user) {
+        return redirect()->route('login');
+    }
+
+    return match ($user->role) {
+        'tu' => redirect()->route('tu.dashboard'),
+        'bendahara' => redirect()->route('bendahara.dashboard'),
+        'orang_tua', 'ortu' => redirect()->route('ortu.dashboard'),
+        default => view('dashboard'),
+    };
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -23,9 +36,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::middleware(['auth', 'role:tu'])->get('/tu', function () {
-        return view('roles.tu');
-    })->name('tu.dashboard');
+    Route::middleware(['auth', 'role:tu'])->get('/tu', [TuDashboardController::class, 'index'])
+        ->name('tu.dashboard');
 
     Route::middleware(['auth', 'role:tu'])->group(function () {
         // Iterasi-04: Data Kelas (ambil basis data dari siswa, lalu kelola metadata kelas).
@@ -91,9 +103,8 @@ Route::middleware('auth')->group(function () {
             ->name('tu.arsip.export_sublist');
     });
 
-    Route::middleware(['auth', 'role:bendahara'])->get('/bendahara', function () {
-        return view('roles.bendahara');
-    })->name('bendahara.dashboard');
+    Route::middleware(['auth', 'role:bendahara'])->get('/bendahara', [BendaharaDashboardController::class, 'index'])
+        ->name('bendahara.dashboard');
 
     Route::middleware(['auth', 'role:bendahara'])->group(function () {
         Route::get('/bendahara/master-faktur', [MasterFakturController::class, 'index'])

@@ -33,7 +33,7 @@ class AuthenticatedSessionController extends Controller
         $defaultRoute = match ($user?->role) {
             'bendahara' => 'bendahara.dashboard',
             'tu' => 'tu.dashboard',
-            'ortu' => 'ortu.dashboard',
+            'orang_tua', 'ortu' => 'ortu.dashboard',
             default => 'dashboard', // default route jika role tidak dikenali, bisa diarahkan ke halaman umum atau dashboard
         };
 

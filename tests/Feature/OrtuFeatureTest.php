@@ -46,7 +46,7 @@ class OrtuFeatureTest extends TestCase
             'nisn' => '9876543210'
         ]);
 
-        $response->assertRedirect('/ortu/faktur');
+        $response->assertRedirect('/ortu');
         $this->assertAuthenticated();
 
         // Validasi gagal jika nisn ngawur

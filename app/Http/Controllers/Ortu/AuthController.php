@@ -35,8 +35,8 @@ class AuthController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            // Arahkan ke Dasbor Faktur
-            return redirect()->intended('/ortu/faktur');
+            // Arahkan ke Dashboard Ortu
+            return redirect()->route('ortu.dashboard');
         }
 
         // Jika tidak, tolak
