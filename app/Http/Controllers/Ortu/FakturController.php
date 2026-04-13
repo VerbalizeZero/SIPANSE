@@ -10,6 +10,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class FakturController extends Controller
 {
@@ -30,8 +31,16 @@ class FakturController extends Controller
 
         // Cari faktur-faktur yang dikhususkan (target_type) mengenai Siswa ini.
         $fakturs = TuFaktur::with(['masterFaktur'])
-            // Status harus belum selesai, case-insensitive agar data lama/baru tetap konsisten.
-            ->whereRaw('LOWER(status) != ?', ['selesai'])
+            // Faktur "selesai" tetap boleh tampil jika siswa ini memang punya record verifikasi.
+            ->where(function ($statusQuery) use ($siswa) {
+                $statusQuery->whereRaw('LOWER(status) != ?', ['selesai'])
+                    ->orWhereExists(function ($subQuery) use ($siswa) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('penyerahan_fakturs')
+                            ->whereColumn('penyerahan_fakturs.tu_faktur_id', 'tu_fakturs.id')
+                            ->where('penyerahan_fakturs.siswa_id', $siswa->id);
+                    });
+            })
             // Faktur baru tampil ketika tanggal ketersediaannya sudah masuk (WIB/Jakarta).
             ->whereDate('tersedia_pada', '<=', $todayJakarta)
             ->where(function ($query) use ($siswa) {

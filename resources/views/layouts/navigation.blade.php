@@ -19,6 +19,9 @@
                         <x-nav-link :href="route('bendahara.master-faktur.index')" :active="request()->routeIs('bendahara.master-faktur.*')">
                             {{ __('Membuat Faktur') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('bendahara.arsip.index')" :active="request()->routeIs('bendahara.arsip.*')">
+                            {{ __('Arsip Faktur') }}
+                        </x-nav-link>
                     @endif
 
                     @if (auth()->user()?->role === 'tu')
@@ -33,6 +36,9 @@
                         </x-nav-link>
                         <x-nav-link :href="route('tu.verifikasi.index')" :active="request()->routeIs('tu.verifikasi.*')">
                             {{ __('Verifikasi') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('tu.arsip.index')" :active="request()->routeIs('tu.arsip.*')">
+                            {{ __('Arsip') }}
                         </x-nav-link>
                     @endif
 
@@ -102,6 +108,9 @@
                 <x-responsive-nav-link :href="route('bendahara.master-faktur.index')" :active="request()->routeIs('bendahara.master-faktur.*')">
                     {{ __('Membuat Harga') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('bendahara.arsip.index')" :active="request()->routeIs('bendahara.arsip.*')">
+                    {{ __('Arsip Faktur') }}
+                </x-responsive-nav-link>
             @endif
 
             @if (auth()->user()?->role === 'tu')
@@ -116,6 +125,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('tu.verifikasi.index')" :active="request()->routeIs('tu.verifikasi.*')">
                     {{ __('Verifikasi') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('tu.arsip.index')" :active="request()->routeIs('tu.arsip.*')">
+                    {{ __('Arsip') }}
                 </x-responsive-nav-link>
             @endif
 

@@ -32,4 +32,10 @@ class TuFaktur extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    // Relasi ke user TU yang terakhir mengekspor Laporan Final.
+    public function lastExportedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'last_exported_by');
+    }
 }

@@ -1,4 +1,15 @@
 <x-app-layout>
+    {{-- Safelist Kelas Tailwind Khusus Status Verifikasi --}}
+    <div class="hidden bg-slate-100 text-slate-700 border-slate-200 border-slate-200 bg-slate-50/60
+                bg-yellow-100 text-yellow-800 border-yellow-200 border-amber-300 bg-amber-50/60
+                bg-amber-100 text-amber-800 border-amber-200
+                bg-emerald-50 text-emerald-700 border-emerald-200 border-emerald-200 bg-emerald-50/30
+                bg-rose-100 text-rose-700 border-rose-200 border-rose-200 bg-rose-50/40
+                bg-blue-100 text-blue-800 border-blue-200 bg-amber-50 text-amber-700 border-amber-200
+                bg-blue-50 text-blue-700 border-blue-200 transition-colors duration-300
+                border-yellow-400 text-slate-800 border-amber-400 border-blue-400 border-slate-300 border-slate-400 border-slate-700">
+    </div>
+
     <div class="py-8">
         <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             {{-- Hidden input ini menjadi jembatan data Blade -> JavaScript. --}}
@@ -8,7 +19,7 @@
                 <div>
                     <h1 class="text-2xl font-semibold text-slate-900">{{ $faktur->masterFaktur?->nama_faktur ?? '-' }}</h1>
                     <p class="mt-1 text-sm text-slate-500">
-                        {{ ucfirst($faktur->target_type) }} - {{ $faktur->target_value ?? 'Semua Siswa' }}
+                        {{ $targetDisplay }}
                     </p>
                 </div>
                 <a href="{{ route('tu.verifikasi.index') }}"
@@ -70,27 +81,38 @@
                         <p id="export-status-hint" class="mt-2 text-sm leading-6 text-slate-600">
                             Menunggu semua sublist selesai diverifikasi.
                         </p>
-                        <div class="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-                            <p class="text-xs uppercase tracking-wide text-slate-400">Audit Trail Export</p>
-                            @php($lastExport = \App\Models\TuFaktur::find($faktur->id)?->updated_at)
-                            <p id="export-audit-trail" class="mt-1">
-                                {{ strtolower((string)$faktur->status) === 'diarsipkan' ? 'Diexport pada ' . $lastExport?->timezone('Asia/Jakarta')->format('d M Y H:i') : 'Belum pernah diexport.' }}
-                            </p>
-                        </div>
+                        @if($lastExport)
+                            <div class="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                                <p class="text-xs uppercase tracking-wide text-slate-400">Audit Trail Export</p>
+                                <p id="export-audit-trail" class="mt-1">
+                                    {{ $exportBy }} pada {{ \Carbon\Carbon::parse($lastExport)->timezone('Asia/Jakarta')->format('d/m/Y, H.i.s') }}
+                                </p>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="mt-4 flex flex-col gap-2">
                         <!-- Tombol Export Sementara -->
-                        <form method="POST" action="{{ route('tu.verifikasi.export', $faktur) }}">
+                        <form method="POST" action="{{ route('tu.verifikasi.export_sementara', $faktur) }}">
                             @csrf
+                            @php
+                                // Check if all students are verified (diverifikasi)
+                                $allVerified = true;
+                                foreach ($targetSiswas as $siswa) {
+                                    if (!isset($siswa['penyerahan_id']) || $siswa['model']->penyerahan_status !== 'diverifikasi') {
+                                        $allVerified = false;
+                                        break;
+                                    }
+                                }
+                            @endphp
                             <button type="submit" id="btn-export-sementara"
                                 @if(in_array(strtolower((string)$faktur->status), ['selesai', 'diarsipkan'])) disabled class="hidden" @else class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700" @endif>
-                                Export Laporan
+                                {{ $allVerified && in_array(strtolower((string)$faktur->status), ['berlangsung', 'pending']) ? 'Laporan Final' : 'Export Laporan' }}
                             </button>
                         </form>
 
                         <!-- Tombol Export Arsip -->
-                        <form method="POST" action="{{ route('tu.verifikasi.export', $faktur) }}">
+                        <form method="POST" action="{{ route('tu.verifikasi.export_final', $faktur) }}">
                             @csrf
                             <button type="submit" id="btn-export-arsip"
                                 @if(!in_array(strtolower((string)$faktur->status), ['selesai', 'diarsipkan'])) disabled class="hidden" @else class="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors" @endif>
@@ -145,7 +167,7 @@
                         data-verification-state="pending"
                         data-proof-state="{{ $item['berkas_file'] ? 'uploaded' : 'empty' }}"
                         data-original-verif="{{ $item['verification_status']['label'] }}"
-                        class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors duration-300">
+                        class="rounded-xl border {{ $item['card_class'] }} p-4 transition-colors duration-300">
                         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                             <div>
                                 <h3 class="text-base font-semibold text-slate-900">{{ $siswa->nama_siswa }}</h3>
@@ -328,34 +350,47 @@
 
         // Pemanggilan API ke Laravel Backend untuk merekam pilihan verifikasi.
         // Konsep AJAX yang membuat UX "snappy" karena page tidak berkedip.
-        const updateBackend = async (studentId, status, note) => {
+        const updateBackend = async (studentId, status, note, file = null) => {
             const endpoint = `/tu/verifikasi/${fakturId}/siswa/${studentId}/status`;
-            const payload = {
-                status: status,
-                catatan_penolakan: note
-            };
+            
+            let fetchOptions = {};
+            
+            if (file) {
+                const formData = new FormData();
+                formData.append('status', status);
+                formData.append('catatan_penolakan', note);
+                formData.append('berkas_file', file);
+                
+                fetchOptions = {
+                    method: 'POST',
+                    headers: {
+                        "Accept": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
+                    },
+                    body: formData
+                };
+            } else {
+                fetchOptions = {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
+                    },
+                    body: JSON.stringify({ status, catatan_penolakan: note })
+                };
+            }
 
             const modal = document.getElementById(`kelola-verifikasi-${studentId}`);
             const buttons = modal.querySelectorAll('button');
             buttons.forEach(btn => btn.disabled = true);
 
             try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        // [SECURITY: CSRF PROTECTION]
-                        // Token ini menjamin bahwa request yang dilayangkan berasal murni dari aplikasi SIPANSE, bukan
-                        // dari script Phishing pihak ketiga yang mencoba meniru sesi Staf TU.
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
-                    },
-                    body: JSON.stringify(payload)
-                });
+                const response = await fetch(endpoint, fetchOptions);
                 
                 const data = await response.json();
                 if(data.success) {
-                    return data.sublist_status; // (misal: "berlangsung", "selesai")
+                    return data; // Return full object: sublist_status & is_exported
                 }
             } catch(e) {
                 console.error(e);
@@ -394,8 +429,14 @@
             const exportStatusHint = document.getElementById('export-status-hint');
             if (!exportStatusHint) return;
 
+            const isExported = <?php echo json_encode(!empty($lastExport)); ?>;
+
             if (serverStatus === 'selesai') {
-                exportStatusHint.innerHTML = '<span class="text-amber-600 font-medium">Semua siswa selesai diverifikasi!</span> Laporan sublist sudah siap untuk diexport.';
+                if (isExported) {
+                    exportStatusHint.innerHTML = '<span class="text-emerald-600 font-medium">Laporan Final telah ditekan!</span> Data sedang dalam masa aman.';
+                } else {
+                    exportStatusHint.innerHTML = '<span class="text-amber-600 font-medium">Semua siswa selesai diverifikasi!</span> Laporan sublist sudah siap untuk diexport.';
+                }
             } else if (serverStatus === 'diarsipkan') {
                 exportStatusHint.innerHTML = '<span class="text-emerald-600 font-medium">Laporan sudah diamankan.</span> Sublist ini akan segera diarsipkan sesuai jadwal batas waktu.';
             } else {
@@ -449,23 +490,38 @@
         };
 
         // Meregangkan atau mengecilkan UI badge sublist di atas dokumen.
-        const updateSublistSummary = (serverStatus) => {
+        const updateSublistSummary = (serverStatus, dynamicIsExported = null) => {
             let nextStatusKey = 'pending';
             if (serverStatus === 'selesai') nextStatusKey = 'completed';
             if (serverStatus === 'diarsipkan') nextStatusKey = 'archived';
             
             const nextStatus = statusConfig[nextStatusKey];
 
+            const isExported = dynamicIsExported !== null ? dynamicIsExported : <?php echo json_encode(!empty($lastExport)); ?>;
+            const exportData = <?php echo json_encode($lastExport ? $exportBy . ' pada ' . \Carbon\Carbon::parse($lastExport)->timezone('Asia/Jakarta')->format('d/m/Y, H.i.s') : 'Belum pernah diexport.'); ?>;
+            
             const badge = document.getElementById('sublist-status-badge');
             const label = document.getElementById('sublist-status-label');
             const hint = document.getElementById('sublist-status-hint');
-
-            badge.className = `inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${nextStatus.badge}`;
-            label.textContent = nextStatus.label;
-            hint.textContent = nextStatus.hint;
-            
-            const btnSementara = document.getElementById('btn-export-sementara');
             const btnArsip = document.getElementById('btn-export-arsip');
+            
+            if (serverStatus === 'selesai') {
+                if (isExported) {
+                    badge.className = `inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 border-emerald-300`;
+                    label.textContent = "Aman";
+                    hint.textContent = "Laporan Final sudah di klik! Mulai laju menghitung 7 hari penuh sebelum dimasukkan ke Arsip.";
+                } else {
+                    badge.className = `inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${nextStatus.badge}`;
+                    label.textContent = nextStatus.label;
+                    hint.textContent = "Silakan klik Laporan Final untuk memulai proses pengarsipan.";
+                }
+            } else {
+                badge.className = `inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${nextStatus.badge}`;
+                label.textContent = nextStatus.label;
+                hint.textContent = nextStatus.hint;
+            }
+
+            const btnSementara = document.getElementById('btn-export-sementara');
             
             if (serverStatus === 'selesai' || serverStatus === 'diarsipkan') {
                 if (btnSementara) {
@@ -475,7 +531,12 @@
                 if (btnArsip) {
                     btnArsip.disabled = false;
                     btnArsip.className = "w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors";
-                    btnArsip.textContent = serverStatus === 'diarsipkan' ? 'Unduh Ulang Laporan' : 'Laporan Final';
+                    
+                    if (serverStatus === 'selesai') {
+                        btnArsip.textContent = isExported ? 'Unduh Ulang Laporan' : 'Laporan Final';
+                    } else if (serverStatus === 'diarsipkan') {
+                        btnArsip.textContent = 'Unduh Ulang Laporan';
+                    }
                 }
             } else {
                 if (btnSementara) {
@@ -486,6 +547,12 @@
                     btnArsip.disabled = true;
                     btnArsip.className = "hidden";
                 }
+            }
+
+            // updateExportAudit function telah diganti dengan blade realtime render
+            const auditEl = document.getElementById('export-audit-trail');
+            if (auditEl && exportData !== 'Belum pernah diexport.' && serverStatus === 'selesai') {
+                auditEl.textContent = exportData;
             }
 
             updateExportAudit(serverStatus);
@@ -540,11 +607,14 @@
                 
                 if (noteError) noteError.classList.add('hidden');
 
-                const newSublistStatus = await updateBackend(studentId, 'diverifikasi', noteInput?.value.trim() ?? '');
+                const proofInput = modal?.querySelector('[data-role="proof-input"]');
+                const file = proofInput?.files?.[0];
+
+                const responseData = await updateBackend(studentId, 'diverifikasi', noteInput?.value.trim() ?? '', file);
                 
-                if (newSublistStatus) {
+                if (responseData) {
                     updateStudentCard(studentId, 'approved');
-                    updateSublistSummary(newSublistStatus);
+                    updateSublistSummary(responseData.sublist_status, responseData.is_exported);
                     closeModal(`kelola-verifikasi-${studentId}`);
                 }
             });
@@ -566,11 +636,14 @@
                 }
                 noteError?.classList.add('hidden');
 
-                const newSublistStatus = await updateBackend(studentId, 'ditolak', note);
+                const proofInput = modal?.querySelector('[data-role="proof-input"]');
+                const file = proofInput?.files?.[0];
+
+                const responseData = await updateBackend(studentId, 'ditolak', note, file);
                 
-                if (newSublistStatus) {
+                if (responseData) {
                     updateStudentCard(studentId, 'rejected');
-                    updateSublistSummary(newSublistStatus);
+                    updateSublistSummary(responseData.sublist_status, responseData.is_exported);
                     closeModal(`kelola-verifikasi-${studentId}`);
                 }
             });

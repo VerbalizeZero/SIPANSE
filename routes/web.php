@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Bendahara\MasterFakturController;
+use App\Http\Controllers\Bendahara\ArsipController as BendaharaArsipController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tu\DataKelasController;
 use App\Http\Controllers\Tu\FakturController;
@@ -71,10 +72,23 @@ Route::middleware('auth')->group(function () {
             ->name('tu.verifikasi.show');
         Route::post('/tu/verifikasi/{faktur}/reject', [VerifikasiController::class, 'reject'])
             ->name('tu.verifikasi.reject');
-        Route::post('/tu/verifikasi/{faktur}/export', [VerifikasiController::class, 'export'])
+        Route::post('/tu/verifikasi/{faktur}/export-sementara', [VerifikasiController::class, 'exportSementara'])
+            ->name('tu.verifikasi.export_sementara');
+        // Backward compatibility untuk endpoint lama test/export.
+        Route::post('/tu/verifikasi/{faktur}/export', [VerifikasiController::class, 'exportSementara'])
             ->name('tu.verifikasi.export');
+        Route::post('/tu/verifikasi/{faktur}/export-final', [VerifikasiController::class, 'exportFinal'])
+            ->name('tu.verifikasi.export_final');
         Route::post('/tu/verifikasi/{faktur}/siswa/{siswa}/status', [VerifikasiController::class, 'updateStatusSiswa'])
             ->name('tu.verifikasi.update_status_siswa');
+
+        // Iterasi-07: Menu Arsip
+        Route::get('/tu/arsip', [\App\Http\Controllers\Tu\ArsipController::class, 'index'])
+            ->name('tu.arsip.index');
+        Route::get('/tu/arsip/export-global', [\App\Http\Controllers\Tu\ArsipController::class, 'exportGlobal'])
+            ->name('tu.arsip.export_global');
+        Route::post('/tu/arsip/{faktur}/export-sublist', [\App\Http\Controllers\Tu\ArsipController::class, 'exportSublist'])
+            ->name('tu.arsip.export_sublist');
     });
 
     Route::middleware(['auth', 'role:bendahara'])->get('/bendahara', function () {
@@ -90,6 +104,13 @@ Route::middleware('auth')->group(function () {
             ->name('bendahara.master-faktur.update');
         Route::delete('/bendahara/master-faktur/{masterFaktur}', [MasterFakturController::class, 'destroy'])
             ->name('bendahara.master-faktur.destroy');
+
+        Route::get('/bendahara/arsip', [BendaharaArsipController::class, 'index'])
+            ->name('bendahara.arsip.index');
+        Route::get('/bendahara/arsip/export-global', [BendaharaArsipController::class, 'exportGlobal'])
+            ->name('bendahara.arsip.export_global');
+        Route::post('/bendahara/arsip/{faktur}/export-sublist', [BendaharaArsipController::class, 'exportSublist'])
+            ->name('bendahara.arsip.export_sublist');
     });
 
     Route::post('/ortu/logout', [\App\Http\Controllers\Ortu\AuthController::class, 'logout'])

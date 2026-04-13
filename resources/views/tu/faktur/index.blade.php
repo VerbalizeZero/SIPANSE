@@ -86,8 +86,13 @@
                                         $displayStatus = 'Pending';
                                         $statusClass = 'bg-slate-100 text-slate-700';
                                     } elseif ($rawStatus === 'selesai') {
-                                        $displayStatus = 'Selesai';
-                                        $statusClass = 'bg-amber-100 text-amber-800';
+                                        if ($faktur->last_exported_at) {
+                                            $displayStatus = 'Aman';
+                                            $statusClass = 'bg-emerald-100 text-emerald-800';
+                                        } else {
+                                            $displayStatus = 'Selesai';
+                                            $statusClass = 'bg-amber-100 text-amber-800';
+                                        }
                                     } elseif ($rawStatus === 'diarsipkan') {
                                         $displayStatus = 'Arsip';
                                         $statusClass = 'bg-emerald-100 text-emerald-800';
