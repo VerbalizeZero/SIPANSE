@@ -12,6 +12,7 @@ use App\Http\Controllers\Tu\VerifikasiController;
 use App\Http\Controllers\Tu\DashboardController as TuDashboardController;
 use App\Http\Controllers\Tu\ProfileController as TuProfileController;
 use App\Http\Controllers\Ortu\DashboardController as OrtuDashboardController;
+use App\Http\Controllers\Ortu\NotifikasiController as OrtuNotifikasiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -146,6 +147,11 @@ Route::middleware('auth')->group(function () {
              ->name('ortu.faktur.index');
         Route::post('/ortu/faktur/{faktur}/submit', [\App\Http\Controllers\Ortu\FakturController::class, 'submit'])
              ->name('ortu.faktur.submit');
+
+        Route::get('/ortu/notifikasi/{notifikasi}/read', [OrtuNotifikasiController::class, 'read'])
+             ->name('ortu.notifikasi.read');
+        Route::post('/ortu/notifikasi/read-all', [OrtuNotifikasiController::class, 'readAll'])
+             ->name('ortu.notifikasi.read-all');
     });
 });
 

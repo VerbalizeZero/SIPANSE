@@ -7,6 +7,12 @@
             'orang_tua', 'ortu' => 'ortu.dashboard',
             default => 'dashboard',
         };
+
+        $isOrtu = in_array($role, ['orang_tua', 'ortu'], true);
+        $notifikasis = $isOrtu
+            ? \App\Models\Notifikasi::where('user_id', auth()->id())->latest()->limit(10)->get()
+            : collect();
+        $unreadCount = $notifikasis->whereNull('read_at')->count();
     @endphp
 
     {{-- Backdrop --}}
@@ -168,8 +174,57 @@
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6">
-                @if (in_array(auth()->user()?->role, ['orang_tua', 'ortu'], true))
+                @if ($isOrtu)
                     <div class="inline-flex items-center gap-3">
+                        {{-- Bell Notification --}}
+                        <div class="relative" x-data="{ notifOpen: false }">
+                            <button @click="notifOpen = !notifOpen" class="relative rounded-full p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 focus:outline-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                                @if ($unreadCount > 0)
+                                    <span class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">{{ $unreadCount }}</span>
+                                @endif
+                            </button>
+
+                            <div
+                                x-show="notifOpen"
+                                @click.away="notifOpen = false"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="transform opacity-0 scale-95"
+                                x-transition:enter-end="transform opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="transform opacity-100 scale-100"
+                                x-transition:leave-end="transform opacity-0 scale-95"
+                                class="absolute right-0 mt-2 w-80 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                                style="display: none;"
+                            >
+                                <div class="flex items-center justify-between border-b border-gray-100 px-4 py-2">
+                                    <span class="text-sm font-semibold text-gray-700">Notifikasi</span>
+                                    @if ($unreadCount > 0)
+                                        <form method="POST" action="{{ route('ortu.notifikasi.read-all') }}">
+                                            @csrf
+                                            <button type="submit" class="text-xs text-blue-600 hover:text-blue-800">Tandai semua dibaca</button>
+                                        </form>
+                                    @endif
+                                </div>
+
+                                <div class="max-h-64 overflow-y-auto">
+                                    @forelse ($notifikasis as $notif)
+                                        <a href="{{ route('ortu.notifikasi.read', $notif) }}" class="block px-4 py-3 hover:bg-gray-50 {{ is_null($notif->read_at) ? 'bg-blue-50' : '' }}">
+                                            <p class="text-sm font-medium text-gray-800">{{ $notif->title }}</p>
+                                            <p class="text-xs text-gray-600 line-clamp-2">{{ $notif->message }}</p>
+                                            <p class="mt-1 text-[10px] text-gray-400">{{ $notif->created_at->diffForHumans() }}</p>
+                                        </a>
+                                    @empty
+                                        <div class="px-4 py-6 text-center text-sm text-gray-500">
+                                            Tidak ada notifikasi
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+
                         <span class="text-sm font-medium text-gray-700">{{ Auth::user()->name }}</span>
                         <form method="POST" action="{{ route('ortu.logout') }}">
                             @csrf

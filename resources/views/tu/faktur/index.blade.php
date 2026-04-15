@@ -102,18 +102,18 @@
                                     }
                                 @endphp
                                 <tr>
-                                    <td class="px-4 py-3">{{ $faktur->masterFaktur?->nama_faktur ?? '-' }}</td>
-                                    <td class="px-4 py-3">
-                                        <span class="inline-flex rounded-full border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
+                                    <td class="whitespace-nowrap px-4 py-3">{{ $faktur->masterFaktur?->nama_faktur ?? '-' }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3">
+                                        <span class="inline-flex whitespace-nowrap rounded-full border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
                                             {{ $targetLabel }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3">{{ $targetValueText }}</td>
-                                    <td class="px-4 py-3">Rp {{ number_format((int) ($faktur->masterFaktur?->nominal ?? 0), 0, ',', '.') }}</td>
-                                    <td class="px-4 py-3">{{ $faktur->tersedia_pada }}</td>
-                                    <td class="px-4 py-3">{{ $faktur->jatuh_tempo }}</td>
-                                    <td class="px-4 py-3">
-                                        <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $statusClass }}">
+                                    <td class="whitespace-nowrap px-4 py-3">Rp {{ number_format((int) ($faktur->masterFaktur?->nominal ?? 0), 0, ',', '.') }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3">{{ $faktur->tersedia_pada?->toDateString() }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3">{{ $faktur->jatuh_tempo?->toDateString() }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3">
+                                        <span class="inline-flex whitespace-nowrap rounded-full px-2 py-1 text-xs font-semibold {{ $statusClass }}">
                                             {{ $displayStatus }}
                                         </span>
                                     </td>
@@ -236,11 +236,11 @@
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-700">Tanggal Faktur</label>
-                            <input type="date" name="tersedia_pada" value="{{ $faktur->tersedia_pada }}" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required />
+                            <input type="date" name="tersedia_pada" value="{{ $faktur->tersedia_pada?->toDateString() }}" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required />
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-700">Jatuh Tempo</label>
-                            <input type="date" name="jatuh_tempo" value="{{ $faktur->jatuh_tempo }}" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required />
+                            <input type="date" name="jatuh_tempo" value="{{ $faktur->jatuh_tempo?->toDateString() }}" class="block w-full rounded-md border-slate-300 focus:border-blue-600 focus:ring-blue-600" required />
                         </div>
 
                     </div>

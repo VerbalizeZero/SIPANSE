@@ -21,6 +21,13 @@ class TuFaktur extends Model
         'tersedia_pada',
         'jatuh_tempo',
         'status',
+        'notifikasi_dikirim_at',
+    ];
+
+    protected $casts = [
+        'tersedia_pada' => 'date',
+        'jatuh_tempo' => 'date',
+        'notifikasi_dikirim_at' => 'datetime',
     ];
 
     // Relasi ke master faktur dari Bendahara (nama faktur + nominal).

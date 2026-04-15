@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Tu;
 use App\Http\Controllers\Controller;
 use App\Models\Siswa;
 use App\Models\TuFaktur;
+use App\Services\NotifikasiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -192,6 +193,11 @@ class VerifikasiController extends Controller
 
         $penyerahan->save();
 
+        // Kirim notifikasi ke ortu saat status diverifikasi atau ditolak
+        if (in_array($validated['status'], ['diverifikasi', 'ditolak'], true)) {
+            NotifikasiService::notifyOrtuForVerifikasi($faktur, $siswa, $validated['status']);
+        }
+
         // Auto-completion check
         $totalSiswas = $this->resolveTargetSiswas($faktur)->count();
         $verifiedSiswas = \App\Models\PenyerahanFaktur::where('tu_faktur_id', $faktur->id)
@@ -344,10 +350,10 @@ class VerifikasiController extends Controller
             return back()->with('error', 'Laporan Final hanya bisa diproses setelah semua siswa selesai diverifikasi.');
         }
 
-        // Jika status 'selesai', ubah status ke 'diarsipkan' dan catat audit export final.
+        // Catat audit export final. Status tetap 'selesai' agar auto-archive
+        // berjalan setelah 7 hari. Jika sudah pernah di-export, tetap update timestamp.
         if ($currentStatus === 'selesai' || empty($faktur->last_exported_at)) {
             $faktur->forceFill([
-                'status' => 'diarsipkan',
                 'last_exported_at' => now(),
                 'last_exported_by' => auth()->id(),
             ])->save();

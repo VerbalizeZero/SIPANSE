@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MasterFaktur;
 use App\Models\Siswa;
 use App\Models\TuFaktur;
+use App\Services\NotifikasiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -103,7 +104,12 @@ class FakturController extends Controller
         $validated = $this->normalizePayload($this->validatePayload($request));
         $validated['created_by'] = Auth::id();
         $validated['status'] = 'pending';
-        TuFaktur::create($validated);
+        $tuFaktur = TuFaktur::create($validated);
+
+        if ($tuFaktur->tersedia_pada->toDateString() <= now()->toDateString()) {
+            NotifikasiService::notifyOrtuForNewFaktur($tuFaktur);
+            $tuFaktur->update(['notifikasi_dikirim_at' => now()]);
+        }
 
         return redirect()->route('tu.faktur.index');
     }
