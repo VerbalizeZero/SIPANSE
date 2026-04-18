@@ -13,6 +13,9 @@ use App\Http\Controllers\Tu\DashboardController as TuDashboardController;
 use App\Http\Controllers\Tu\ProfileController as TuProfileController;
 use App\Http\Controllers\Ortu\DashboardController as OrtuDashboardController;
 use App\Http\Controllers\Ortu\NotifikasiController as OrtuNotifikasiController;
+use App\Http\Controllers\Ortu\ProfileController as OrtuProfileController;
+use App\Http\Controllers\Api\OrtuEmailCheckController;
+use App\Http\Controllers\Api\AdminUsernameEmailCheckController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -143,6 +146,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['auth', 'role:orang_tua'])->group(function () {
         Route::get('/ortu', [OrtuDashboardController::class, 'index'])->name('ortu.dashboard');
 
+        Route::get('/ortu/profile', [OrtuProfileController::class, 'edit'])->name('ortu.profile.edit');
+        Route::put('/ortu/profile', [OrtuProfileController::class, 'update'])->name('ortu.profile.update');
+        Route::put('/ortu/profile/password', [OrtuProfileController::class, 'updatePassword'])->name('ortu.profile.password');
+
         Route::get('/ortu/faktur', [\App\Http\Controllers\Ortu\FakturController::class, 'index'])
              ->name('ortu.faktur.index');
         Route::post('/ortu/faktur/{faktur}/submit', [\App\Http\Controllers\Ortu\FakturController::class, 'submit'])
@@ -154,5 +161,16 @@ Route::middleware('auth')->group(function () {
              ->name('ortu.notifikasi.read-all');
     });
 });
+
+// API endpoint untuk cek email Orang Tua berdasarkan NISN
+Route::post('/api/check-ortu-email', OrtuEmailCheckController::class)
+    ->name('api.ortu.check-email');
+
+// API endpoint untuk cek admin username/email (TU/Bendahara)
+Route::post('/api/check-admin-username', [AdminUsernameEmailCheckController::class, 'checkUsername'])
+    ->name('api.admin.check-username');
+
+Route::post('/api/check-admin-email', [AdminUsernameEmailCheckController::class, 'checkEmail'])
+    ->name('api.admin.check-email');
 
 require __DIR__.'/auth.php';

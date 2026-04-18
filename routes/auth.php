@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Auth\AdminPasswordResetController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\OrtuPasswordResetController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -35,6 +37,32 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // Routes for Orang Tua Password Reset
+    Route::get('ortu-forgot-password', [OrtuPasswordResetController::class, 'create'])
+        ->name('password.ortu.request');
+
+    Route::post('ortu-forgot-password', [OrtuPasswordResetController::class, 'store'])
+        ->name('password.ortu.email');
+
+    Route::get('ortu-reset-password/{token}', [OrtuPasswordResetController::class, 'edit'])
+        ->name('password.ortu.reset');
+
+    Route::post('ortu-reset-password', [OrtuPasswordResetController::class, 'update'])
+        ->name('password.ortu.update');
+
+    // Routes for Admin (TU/Bendahara) Password Reset
+    Route::get('admin-forgot-password', [AdminPasswordResetController::class, 'create'])
+        ->name('password.admin.request');
+
+    Route::post('admin-forgot-password', [AdminPasswordResetController::class, 'store'])
+        ->name('password.admin.email');
+
+    Route::get('admin-reset-password/{token}', [AdminPasswordResetController::class, 'edit'])
+        ->name('password.admin.reset');
+
+    Route::post('admin-reset-password', [AdminPasswordResetController::class, 'update'])
+        ->name('password.admin.update');
 });
 
 Route::middleware('auth')->group(function () {

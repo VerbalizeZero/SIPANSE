@@ -331,7 +331,7 @@
                             </svg>
                             <div>
                                 Administration
-                                <span>Tata Usaha &amp; Bendahara</span>
+                                <span>Tata Usaha & Bendahara</span>
                             </div>
                         </button>
                         <button type="button" class="role-button" data-role="ortu">
@@ -342,7 +342,7 @@
                             </svg>
                             <div>
                                 Orang Tua
-                                <span>Login dengan NISN siswa</span>
+                                <span>Login sebagai wali murid</span>
                             </div>
                         </button>
                     </div>
@@ -365,8 +365,8 @@
                                         @endif
                                     </div>
                                     <div class="actions">
-                                        @if (Route::has('password.request'))
-                                            <a class="link" href="{{ route('password.request') }}">Lupa Password?</a>
+                                        @if (Route::has('password.admin.request'))
+                                            <a class="link" href="{{ route('password.admin.request') }}">Lupa Password?</a>
                                         @endif
                                     </div>
                                     <button class="submit" type="submit">Login</button>
@@ -384,6 +384,16 @@
                                         @if ($errors->get('nisn'))
                                             <div class="error">{{ $errors->first('nisn') }}</div>
                                         @endif
+                                    </div>
+                                    <div class="field">
+                                        <label class="label" for="password_ortu">Password</label>
+                                        <input class="input" id="password_ortu" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan password">
+                                        @if ($errors->get('password'))
+                                            <div class="error">{{ $errors->first('password') }}</div>
+                                        @endif
+                                    </div>
+                                    <div class="actions">
+                                        <a class="link" href="{{ route('password.ortu.request') }}">Lupa Password?</a>
                                     </div>
                                     <button class="submit" type="submit">Masuk</button>
                                 </form>

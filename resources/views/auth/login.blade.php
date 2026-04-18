@@ -25,8 +25,8 @@
         </div>
 
         <div class="auth-actions">
-            @if (Route::has('password.request'))
-                <a class="auth-link" href="{{ route('password.request') }}">
+            @if (Route::has('password.admin.request'))
+                <a class="auth-link" href="{{ route('password.admin.request') }}">
                     Lupa Password?
                 </a>
             @endif

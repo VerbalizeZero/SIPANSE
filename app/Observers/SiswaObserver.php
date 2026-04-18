@@ -8,43 +8,64 @@ use App\Models\User;
 class SiswaObserver
 {
     /**
-     * Dijalankan otomatis ketika ada data Siswa baru berhasil disimpan
-     *
-     * @param  \App\Models\Siswa  $siswa
-     * @return void
+     * Handle the Siswa "created" event.
      */
-    public function created(Siswa $siswa)
+    public function created(Siswa $siswa): void
     {
-        // Fungsi updateOrCreate akan mencari User berdasarkan NISN.
-        // Jika belum ada, dia akan membuat baru. Jika ada, dia tidak merusak data lama.
-        User::updateOrCreate(
-            ['nisn' => $siswa->nisn],
-            [
-                'name' => $siswa->nama_siswa,
-                'role' => 'orang_tua',
-                // Tetap mengisi password default karena regulasi Auth database (tidak akan dicek tapi wajib ada)
-                'password' => bcrypt($siswa->nisn),
-                'email' => strtolower($siswa->nisn) . '@student.local' // Dummy email unik
-            ]
-        );
+        $this->createOrUpdateOrtuUser($siswa);
     }
 
     /**
-     * Dijalankan setiap kali data Siswa diupdate (contoh: Koreksi nama / koreksi NISN)
-     *
-     * @param  \App\Models\Siswa  $siswa
-     * @return void
+     * Handle the Siswa "updated" event.
      */
-    public function updated(Siswa $siswa)
+    public function updated(Siswa $siswa): void
     {
-        // Jika nama_siswa diubah dari TU, maka Nama Akun Orang Tua ikut direvisi
-        User::updateOrCreate(
-            ['nisn' => $siswa->nisn],
-            [
-                'name' => $siswa->nama_siswa,
+        $this->createOrUpdateOrtuUser($siswa);
+    }
+
+    /**
+     * Handle the Siswa "deleted" event.
+     */
+    public function deleted(Siswa $siswa): void
+    {
+        // Optional: Hapus juga user orang_tua jika siswa dihapus
+        // Uncomment jika ingin menghapus user orang_tua saat siswa dihapus
+        // $user = User::where('nisn', $siswa->nisn)->where('role', 'orang_tua')->first();
+        // if ($user) {
+        //     $user->delete();
+        // }
+    }
+
+    /**
+     * Create or update Orang Tua user based on Siswa data
+     */
+    private function createOrUpdateOrtuUser(Siswa $siswa): void
+    {
+        if (empty($siswa->nisn) || empty($siswa->email_ortu)) {
+            return;
+        }
+
+        $user = User::where('nisn', $siswa->nisn)
+            ->where('role', 'orang_tua')
+            ->first();
+
+        $userData = [
+            'name' => $siswa->nama_ortu ?: $siswa->nama_siswa,
+            'email' => $siswa->email_ortu,
+        ];
+
+        if ($user) {
+            // Update user yang sudah ada
+            $user->update($userData);
+        } else {
+            // Create user baru jika belum ada
+            User::create([
+                'nisn' => $siswa->nisn,
+                'name' => $siswa->nama_ortu ?: $siswa->nama_siswa,
+                'email' => $siswa->email_ortu,
                 'role' => 'orang_tua',
-                'email' => strtolower($siswa->nisn) . '@student.local'
-            ]
-        );
+                'password' => bcrypt($siswa->nisn), // Default password adalah NISN
+            ]);
+        }
     }
 }

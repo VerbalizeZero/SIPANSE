@@ -157,11 +157,11 @@
                                                             </div>
                                                             <div>
                                                                 <p class="text-xs uppercase tracking-wide text-slate-400">Ketersediaan</p>
-                                                                <p>{{ $faktur->tersedia_pada }}</p>
+                                                                <p>{{ \Carbon\Carbon::parse($faktur->tersedia_pada)->format('d F Y') }}</p>
                                                             </div>
                                                             <div>
                                                                 <p class="text-xs uppercase tracking-wide text-slate-400">Jatuh Tempo</p>
-                                                                <p>{{ $faktur->jatuh_tempo }}</p>
+                                                                <p>{{ \Carbon\Carbon::parse($faktur->jatuh_tempo)->format('d F Y') }}</p>
                                                             </div>
                                                         </div>
                                                     </div>

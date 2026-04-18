@@ -42,12 +42,13 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming parent (ortu) authentication request by NISN.
+     * Handle an incoming parent (ortu) authentication request by NISN and Password.
      */
     public function storeOrtu(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
             'nisn' => ['required', 'regex:/^\d+$/', 'max:20'],
+            'password' => ['required'],
         ]);
 
         $user = \App\Models\User::where('nisn', $credentials['nisn'])
@@ -57,6 +58,13 @@ class AuthenticatedSessionController extends Controller
         if (!$user) {
             return redirect()->route('login')
                 ->withErrors(['nisn' => 'NISN tidak ditemukan sebagai akun Orang Tua.'])
+                ->onlyInput('nisn');
+        }
+
+        // Check password
+        if (!\Illuminate\Support\Facades\Hash::check($credentials['password'], $user->password)) {
+            return redirect()->route('login')
+                ->withErrors(['password' => 'Password salah.'])
                 ->onlyInput('nisn');
         }
 

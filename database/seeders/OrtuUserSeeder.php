@@ -25,10 +25,10 @@ class OrtuUserSeeder extends Seeder
             $user = User::firstOrCreate(
                 ['nisn' => $siswa->nisn],
                 [
-                    'name' => $siswa->nama_siswa,
+                    'name' => $siswa->nama_ortu ?: $siswa->nama_siswa,
                     'role' => 'orang_tua',
                     'password' => bcrypt($siswa->nisn),
-                    'email' => strtolower($siswa->nisn) . '@student.local'
+                    'email' => $siswa->email_ortu
                 ]
             );
 

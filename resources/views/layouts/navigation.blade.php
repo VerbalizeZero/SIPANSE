@@ -95,6 +95,10 @@
 
             <div class="mt-3 space-y-1">
                 @if (in_array(auth()->user()?->role, ['orang_tua', 'ortu'], true))
+                    <x-responsive-nav-link :href="route('ortu.profile.edit')">
+                        {{ __('Profile') }}
+                    </x-responsive-nav-link>
+
                     <form method="POST" action="{{ route('ortu.logout') }}">
                         @csrf
                         <x-responsive-nav-link :href="route('ortu.logout')" class="text-rose-700"
@@ -103,6 +107,7 @@
                         </x-responsive-nav-link>
                     </form>
                 @else
+
                     @php
                         $profileRoute = auth()->user()?->role === 'tu' ? 'tu.profile.edit' : 'bendahara.profile.edit';
                     @endphp
@@ -225,15 +230,35 @@
                             </div>
                         </div>
 
-                        <span class="text-sm font-medium text-gray-700">{{ Auth::user()->name }}</span>
-                        <form method="POST" action="{{ route('ortu.logout') }}">
-                            @csrf
-                            <button type="submit" class="rounded-md border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100">
-                                {{ __('Log Out') }}
-                            </button>
-                        </form>
+                        <x-dropdown align="right" width="48">
+                            <x-slot name="trigger">
+                                <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                                    <div>{{ Auth::user()->name }}</div>
+                                    <div class="ms-1">
+                                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            </x-slot>
+
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('ortu.profile.edit')">
+                                    {{ __('Profile') }}
+                                </x-dropdown-link>
+
+                                <form method="POST" action="{{ route('ortu.logout') }}">
+                                    @csrf
+                                    <x-dropdown-link :href="route('ortu.logout')"
+                                            onclick="event.preventDefault(); this.closest('form').submit();">
+                                        {{ __('Log Out') }}
+                                    </x-dropdown-link>
+                                </form>
+                            </x-slot>
+                        </x-dropdown>
                     </div>
                 @else
+
                     @php
                         $profileRoute = auth()->user()?->role === 'tu' ? 'tu.profile.edit' : 'bendahara.profile.edit';
                     @endphp
